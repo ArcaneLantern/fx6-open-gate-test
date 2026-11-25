@@ -1,0 +1,250 @@
+{
+ "about": "The FX6 kit's choice of designs and the facts the generators need about them (written 2026-11-26 with the designs; read by gen_fx6.py, gen_fx6_write.py, build_fx6_write.sh, emu_fx6*.py, publish_fx6.py)",
+ "encoder": "ogfile2560_xavc_fx6_v2",
+ "encoder_v1": "ogfile2560_xavc_fx6_v1",
+ "screen": "lcd32_fx6_v1",
+ "screen_regions": {
+  "sites": [
+   [
+    "0x1db34c",
+    "0x1db354"
+   ],
+   [
+    "0x1dbb44",
+    "0x1dbb48"
+   ],
+   [
+    "0x60b354",
+    "0x60b364"
+   ],
+   [
+    "0x60cf40",
+    "0x60cf44"
+   ]
+  ],
+  "guards": [
+   [
+    "0x1db108",
+    "0x1db198"
+   ],
+   [
+    "0x1db32c",
+    "0x1db374"
+   ],
+   [
+    "0x1db664",
+    "0x1db670"
+   ],
+   [
+    "0x1dbaa0",
+    "0x1dbb50"
+   ],
+   [
+    "0xce4ee8",
+    "0xce4f0c"
+   ],
+   [
+    "0x60a91c",
+    "0x60a92c"
+   ],
+   [
+    "0x60b2f0",
+    "0x60b374"
+   ],
+   [
+    "0x60cf20",
+    "0x60cf90"
+   ],
+   [
+    "0x606e48",
+    "0x606e58"
+   ]
+  ]
+ },
+ "display_pages": [
+  [
+   "display",
+   "0x1db000",
+   1
+  ],
+  [
+   "dsqcalc",
+   "0x60b000",
+   1
+  ],
+  [
+   "crop",
+   "0x60c000",
+   1
+  ],
+  [
+   "paneltype",
+   "0x1703000",
+   1
+  ],
+  [
+   "desqueeze",
+   "0x12c0000",
+   1
+  ],
+  [
+   "panelcode",
+   "0xce4000",
+   1
+  ]
+ ],
+ "display_reference": {
+  "bytes": {
+   "rear_panel_type_0x1703944 (1 = 16:9, 2 = 4:3, 3 = 3:2)": "0x1703944",
+   "second_output_panel_type_0x1703a74": "0x1703a74"
+  },
+  "words": {
+   "panel_type_table_0x1dbb40 (devices 1/2; stock ff010002, applied ff080002)": [
+    "0x1dbb40",
+    4
+   ],
+   "ratio_16x9_0x1db34c (stock 05e00920102202e0 = 9/16; applied 05e00220032202e0 = 2/3)": [
+    "0x1db34c",
+    8
+   ],
+   "desqueeze_ratios_0x60b354": [
+    "0x60b354",
+    16
+   ],
+   "crop_compare_0x60cf40 (stock 00780428; applied 00780528 = no 2.0x crop)": [
+    "0x60cf40",
+    4
+   ],
+   "imaging_desqueeze_scale_0x12c0408": [
+    "0x12c0408",
+    4
+   ]
+  }
+ },
+ "avcam_guards": [
+  {
+   "name": "unit_rows_0_6",
+   "file_off": "0x37815c",
+   "length": 112
+  },
+  {
+   "name": "clip_rows_2_7",
+   "file_off": "0x377678",
+   "length": 96
+  },
+  {
+   "name": "descriptors_1_3",
+   "file_off": "0x37825c",
+   "length": 432
+  }
+ ],
+ "mp_guards": {
+  "av-cam.bin": [
+   {
+    "name": "unit_row_2 (4K: 0x486 0x474 0x477 0x47a)",
+    "file_off": "0x37817c",
+    "length": 16
+   },
+   {
+    "name": "unit_row_3 (0 0x473 0x476 0x479: XAVC-L 4:2:0 at 2560)",
+    "file_off": "0x37818c",
+    "length": 16
+   },
+   {
+    "name": "clip_row_5 (3840x2160, code 16)",
+    "file_off": "0x3776a8",
+    "length": 16
+   },
+   {
+    "name": "profile key of descriptor #0 (102)",
+    "file_off": "0x3781f4",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #19 (110401)",
+    "file_off": "0x378ca4",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #53 (110402)",
+    "file_off": "0x379fc4",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #54 (110600)",
+    "file_off": "0x37a054",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #30 (107400)",
+    "file_off": "0x3792d4",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #41 (107202)",
+    "file_off": "0x379904",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #93 (206901)",
+    "file_off": "0x37b644",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #98 (206803)",
+    "file_off": "0x37b914",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #99 (206902)",
+    "file_off": "0x37b9a4",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #103 (207204)",
+    "file_off": "0x37bbe4",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #104 (207401)",
+    "file_off": "0x37bc74",
+    "length": 4
+   },
+   {
+    "name": "profile key of descriptor #114 (206804)",
+    "file_off": "0x37c214",
+    "length": 4
+   }
+  ],
+  "libmpr.so": [
+   {
+    "name": "comb row 0: codec, width 3840",
+    "file_off": "0xcca018",
+    "length": 6
+   },
+   {
+    "name": "comb row 9: codec, width 3840",
+    "file_off": "0xcca0f0",
+    "length": 6
+   }
+  ]
+ },
+ "avcam_table_pages": [
+  "0x377000",
+  "0x3b0000"
+ ],
+ "design_source": [
+  "build/build_lcd_fx6.py",
+  "build/emu_lcd_fx6.py",
+  "build/build_ogfile_fx6.py",
+  "build/emu_ogfile_fx6.py",
+  "build/emu_mxf_meta_fx6.py",
+  "build/build_ogfile_fx6_meta.py",
+  "build/mxf_meta_sites_fx6.py",
+  "build/avcam_fnport.py",
+  "build/build_ogfile.py",
+  "modding/FX6_PORT.md",
+  "modding/FX6_PORT_ENCODER.md",
+  "modding/FX6_PORT_SCREEN.md"
+ ]
+}

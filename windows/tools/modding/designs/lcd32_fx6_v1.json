@@ -1,0 +1,250 @@
+{
+ "design": "lcd32_fx6_v1",
+ "build": "fx6_602",
+ "camera": "ILME-FX6 (FX6), firmware 6.02",
+ "title": "FX6 6.02: the LCD shows the open-gate live view at 3:2, pillarboxed on the 16:9 panel (panel type 1 -> panel code 5, whose fit for a 16:9 picture is pillarbox; 16:9 picture ratio 9/16 -> 2/3), and the built-in De-Squeeze Display ratios set for a 3:2 picture (1.3x 1.95:1, 2.0x the whole frame at 3:1, centre crop off)",
+ "kind": "ram_words",
+ "artifact": "cpapp-b.bin 6.02 (ILME-FX6), its loaded image in coprocessor RAM: the words are in the file, the change is made in RAM only",
+ "artifact_sha256": "b432af7212a4f938c690b0e737f4ace7e806d4e543145eb0839f42d478e8def6",
+ "generated_by": "build/build_lcd_fx6.py",
+ "ported_from": "lcd32dsq_fx3_v1 (FX3 7.02; its open-gate screen step works on that camera, 2026-11-24): the same 2/3 ratio and de-squeeze ratios; the FX6's 16:9 panel needs the pillarbox fit mode (panel word, new); no frame tables (the FX6 has none)",
+ "summary": {
+  "sites": 8,
+  "bytes": 32,
+  "guards": 30,
+  "picture": "16:9 live view (aspect code 2) holding the whole 3:2 sensor area",
+  "panel": "rear panel-type byte RAM 0x1703944 (type 1 = 16:9 expected; 2 = 4:3, 3 = 3:2 also handled)",
+  "panel_code_new": {
+   "type 1 (16:9)": "2 -> 5 (pillarbox)",
+   "type 2 (4:3)": "0 (letterbox, as the FX3)",
+   "type 3 (3:2)": "1 (whole panel)"
+  },
+  "ratio_stock": "9/16",
+  "ratio_new": "2/3",
+  "lcd_1280x720": [
+   100,
+   0,
+   1080,
+   720
+  ],
+  "desqueeze": {
+   "1.3x (code 1)": "45/104 -> 20/39",
+   "2.0x (code 4) and code 2 with 16:9": "3/8 -> 1/3, centre crop off"
+  },
+  "goes_with": [
+   "ogsq_fx6_v1",
+   "outsz2560_fx6_v1",
+   "the FX6 encoder step"
+  ]
+ },
+ "while_applied": "every 16:9 picture on the LCD is shown at 3:2, pillarboxed (black bars left and right); a 17:9 (DCI) picture fills the LCD (6% taller than true) instead of its letterbox; the de-squeeze ratios are those of a 3:2 picture on every output that de-squeezes (the calculator is shared, HDMI's de-squeeze too), and 2.0x shows any picture at 3:1. HDMI and the 0x40/0x80 outputs keep their own panel codes: on a 16:9 output nothing changes; on a 4096-wide output (code 5) a 16:9 picture is pillarboxed at 3:2 instead of 16:9",
+ "not_checked": [
+  "on a camera: nothing of this design has run on an FX6",
+  "the FX6's rear panel-type byte 0x1703944 (expected 1 = 16:9 from Sony's 2.76M-dot 16:9 LCD; the dump reads it); the display timing table (0xecf1f2) is the FX3's byte for byte, so it does not name the panel",
+  "which code the FX6 menu's 2.0x sends (1.3x = 1 and 2.0x = 4 inferred; the design makes code 2 with a 16:9 picture 3:1 too)",
+  "whether the FX6 draws focus frames on the plane the second layout (0x60af6e) lays out, and that plane's picture code",
+  "which output device id the FX6 LCD uses (1 assumed, as on the FX3; the dump's panel pages show both types)"
+ ],
+ "sites": [
+  {
+   "ram_address": "0x1db34c",
+   "old": "05e00920",
+   "new": "05e00220",
+   "note": "picture-ratio function, 16:9 picture: numerator 9 -> 2 (the function's 3:2 case)"
+  },
+  {
+   "ram_address": "0x1db350",
+   "old": "102202e0",
+   "new": "032202e0",
+   "note": "picture-ratio function, 16:9 picture: denominator 16 -> 3 (pillarbox width = height x 3/2)"
+  },
+  {
+   "ram_address": "0x1dbb44",
+   "old": "01000000",
+   "new": "08000000",
+   "note": "panel-type table 0x1dbb40 (devices 1 and 2), type 1 (a 16:9 panel): index 1 (panel code 2) -> 8 (0xce4ee8[8] = panel code 5, whose fit for a 16:9 picture is 2 = pillarbox)"
+  },
+  {
+   "ram_address": "0x60b354",
+   "old": "4ff0030a",
+   "new": "4ff0010a",
+   "note": "de-squeeze code 4 (2.0x, every picture shape) and code 2 with a 16:9 picture: 3 -> 1"
+  },
+  {
+   "ram_address": "0x60b358",
+   "old": "082602e0",
+   "new": "032602e0",
+   "note": "de-squeeze 2.0x: 8 -> 3 (1/3: 3:1, the whole 3:2 frame)"
+  },
+  {
+   "ram_address": "0x60b35c",
+   "old": "4ff02d0a",
+   "new": "4ff0140a",
+   "note": "de-squeeze code 1 (1.3x), 16:9 picture: 45 -> 20"
+  },
+  {
+   "ram_address": "0x60b360",
+   "old": "68267869",
+   "new": "27267869",
+   "note": "de-squeeze 1.3x: 104 -> 39 (height = width x 20/39: 1.95:1)"
+  },
+  {
+   "ram_address": "0x60cf40",
+   "old": "00780428",
+   "new": "00780528",
+   "note": "2.0x centre crop (0x60cf1e): code 4 -> 5 (never stored: 0x606e46 refuses 3 and > 4): no crop"
+  }
+ ],
+ "guards": [
+  {
+   "ram_address": "0x1db108",
+   "bytes": "884201d1002070470529fbd8",
+   "note": "the fit function 0x1db108: early out when panel == picture, then the switch, as in the file"
+  },
+  {
+   "ram_address": "0x1db154",
+   "bytes": "03000000030000000000000000000000",
+   "note": "fit table of a 16:9 picture, codes 0-3: 3, 3, 0, 0, as in the file"
+  },
+  {
+   "ram_address": "0x1db164",
+   "bytes": "0000000002000000",
+   "note": "fit table of a 16:9 picture, codes 4-5: 0, 2 (code 5 = pillarbox: what the panel word relies on), as in the file"
+  },
+  {
+   "ram_address": "0x1db16c",
+   "bytes": "03000000000000000200000000000000",
+   "note": "fit table of a 3:2 picture, codes 0-3, as in the file"
+  },
+  {
+   "ram_address": "0x1db184",
+   "bytes": "02000000020000000000000000000000",
+   "note": "fit table of a 4:3 picture, codes 1-4, as in the file"
+  },
+  {
+   "ram_address": "0x1db32c",
+   "bytes": "d0b502afd7f80cc0052b00f284800320",
+   "note": "first 16 bytes of the picture-ratio function 0x1db32c, as in the file"
+  },
+  {
+   "ram_address": "0x1db33c",
+   "bytes": "0422dfe803f00c030680800902200322",
+   "note": "the ratio function's case table and its own 3:2 case (2, 3), as in the file"
+  },
+  {
+   "ram_address": "0x1db354",
+   "bytes": "87204ff48072bb68032b16d0022b37d1",
+   "note": "the ratio function after the 16:9 case: 17:9 (135/256), the fit 3 / fit 2 dispatch, as in the file"
+  },
+  {
+   "ram_address": "0x1db364",
+   "bytes": "0b0c92b21ffa81fe1c02b4fbf0f05043",
+   "note": "the ratio function's pillarbox (fit 2): width = (height << 8) / n x d >> 8, as in the file"
+  },
+  {
+   "ram_address": "0x1dbaa0",
+   "bytes": "0c4601460220032906dc01290fd00229",
+   "note": "the panel-type function 0x1dba9c from its fourth byte (device tests), as in the file"
+  },
+  {
+   "ram_address": "0x1dbacc",
+   "bytes": "02e014f089f71ba151f8200044f6e861",
+   "note": "the panel-type function's table lookups (adr 0x1dbb40, movw/movt 0xce4ee8), as in the file"
+  },
+  {
+   "ram_address": "0x1dbb34",
+   "bytes": "ff0000000100000000000000",
+   "note": "panel-type table of device 0x20 [0xff, 1, 0] (left alone), as in the file"
+  },
+  {
+   "ram_address": "0x1dbb40",
+   "bytes": "ff000000",
+   "note": "panel-type table 0x1dbb40, type 0 (no panel): 0xff, as in the file"
+  },
+  {
+   "ram_address": "0x1dbb48",
+   "bytes": "0000000002000000",
+   "note": "panel-type table 0x1dbb40, types 2 (4:3) and 3 (3:2): indices 0, 2, as in the file"
+  },
+  {
+   "ram_address": "0xce4ee8",
+   "bytes": "00000000020000000100000000000000",
+   "note": "panel-code table 0xce4ee8, indices 0-3, as in the file"
+  },
+  {
+   "ram_address": "0xce4ef8",
+   "bytes": "01000000020000000300000004000000",
+   "note": "panel-code table 0xce4ee8, indices 4-7, as in the file"
+  },
+  {
+   "ram_address": "0xce4f08",
+   "bytes": "05000000",
+   "note": "panel-code table 0xce4ee8, index 8 = 5 (the index the panel word selects), as in the file"
+  },
+  {
+   "ram_address": "0x60a91c",
+   "bytes": "1f2a09d8012303fa02f20b23c8f20003",
+   "note": "the panel-code getter 0x60a91a from its third byte (device mask 0x8000000b), as in the file"
+  },
+  {
+   "ram_address": "0x1db664",
+   "bytes": "054600e0012530462946fff7",
+   "note": "the layout's fit call (0x1db66e bl 0x1db108), as in the file"
+  },
+  {
+   "ram_address": "0x60b2f0",
+   "bytes": "2de9000f81b0d7f810800c461e46d8f8",
+   "note": "the de-squeeze calculator 0x60b2ec from its fifth byte, as in the file"
+  },
+  {
+   "ram_address": "0x60b300",
+   "bytes": "0000d0f80817404688470078d7f80cb0",
+   "note": "the calculator's read of the de-squeeze code (slot 0x708) and the code-4 test, as in the file"
+  },
+  {
+   "ram_address": "0x60b310",
+   "bytes": "04281fd002280ad0012810d1022e1dd0",
+   "note": "the calculator's code switch (4, 2, 1) and the 1.3x 16:9 test, as in the file"
+  },
+  {
+   "ram_address": "0x60b320",
+   "bytes": "052e0cd140f2a32a4ff4d06619e0022e",
+   "note": "the 1.3x 17:9 ratio (675/1664, left alone) and the code-2 16:9 test, as in the file"
+  },
+  {
+   "ram_address": "0x60b330",
+   "bytes": "10d0052e03d14ff02d0a802611e00020",
+   "note": "the 1.5x 17:9 ratio (45/128, left alone) and the full-picture fall-through, as in the file"
+  },
+  {
+   "ram_address": "0x60b364",
+   "bytes": "4ff6f879abf80440c0f20109042816d1",
+   "note": "the calculator's height calculation after the ratios, as in the file"
+  },
+  {
+   "ram_address": "0x60cf20",
+   "bytes": "03af4df804bd154604461e46284618f0",
+   "note": "first bytes of the 2.0x crop function 0x60cf1e, as in the file"
+  },
+  {
+   "ram_address": "0x60cf30",
+   "bytes": "7bff01283cd12868d0f8081728468847",
+   "note": "the crop function's de-squeeze test and its read of the code, as in the file"
+  },
+  {
+   "ram_address": "0x60cf44",
+   "bytes": "34d1042e1ad12868d0f8581628468847",
+   "note": "the crop function after the code compare (device-4 test), as in the file"
+  },
+  {
+   "ram_address": "0x60cf80",
+   "bytes": "608a062101eb80004af6ab21caf6aa21",
+   "note": "the crop function's 4:3 crop: width = (4h + 6) / 3, as in the file"
+  },
+  {
+   "ram_address": "0x606e48",
+   "bytes": "02af82b00d4628688168284688470178",
+   "note": "VdfInputCmdSetDeSqueeze's check 0x606e46: code <= 4, != 3, as in the file"
+  }
+ ]
+}

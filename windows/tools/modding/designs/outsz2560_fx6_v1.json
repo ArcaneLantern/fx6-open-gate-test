@@ -1,0 +1,43 @@
+{
+ "design": "outsz2560_fx6_v1",
+ "build": "fx6_602",
+ "camera": "ILME-FX6 (FX6), firmware 6.02",
+ "kind": "ram_words",
+ "title": "Output size of the stock 4K movie request: 3840 x 2160 -> 3840 x 2560 (size class 3, second entry)",
+ "status": "addresses from emulating the FX6's own size-table function; never read or written on an FX6. The same word change (outsz2560_fx3_v1) works on two FX3s",
+ "emulated_image_sha256": "b432af7212a4f938c690b0e737f4ace7e806d4e543145eb0839f42d478e8def6",
+ "generated_by": "build/build_ram_words_fx6.py",
+ "ported_from": "outsz2560_fx3_v1 (FX3 7.02, RAM 0x13c31c8)",
+ "sites": [
+  {
+   "ram_address": "0x1626bb4",
+   "old": "000f7008",
+   "new": "000f000a",
+   "what": "size class 3, second entry: width, height"
+  }
+ ],
+ "guards": [
+  {
+   "ram_address": "0x1626bac",
+   "bytes": "000f70083e040000",
+   "what": "size class 3, first entry and the raw write buffer id"
+  },
+  {
+   "ram_address": "0x1626bb8",
+   "bytes": "d9020000",
+   "what": "the output buffer's memory id"
+  }
+ ],
+ "precondition": "a movie picture set-up has run (the table is zero before; the FX6 has no stills mode, so it is filled once the camera has started); the word is written during a USB session, while the camera's picture is stopped",
+ "restore": "the old word, or a cold boot",
+ "emulated": {
+  "function": "0x40793c",
+  "table": "0x1626b7c",
+  "entries_equal_fx3_702": true,
+  "stores_into_block": 98
+ },
+ "not_shown": [
+  "anything on an FX6",
+  "the output records' format code on this camera (2 on the A7 IV: 3840 x 2560 x 1.25 = 12,288,000 bytes fits the 13,271,040-byte units of id 0x2d9)"
+ ]
+}

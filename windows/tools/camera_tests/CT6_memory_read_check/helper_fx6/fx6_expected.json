@@ -1,0 +1,313 @@
+{
+ "label": "fx6read_v1",
+ "cp_lo": 786432,
+ "cp_hi": 35651584,
+ "avcam_phys": 17196646400,
+ "avcam_reserve": "@0x401000000",
+ "id_files": {
+  "/libmpr.so": "f3c0e3c8c12415b7ec6225736f847a27ac320b761ef88c7c63a8616349df09a3",
+  "/libsencore.so": "0bb14b72ac75840de801a63d51a1bd9b6772c5ba9fc0293c416f2b5ed3b4bee1",
+  "/libJiritsu.so": "c6435b09c1bd4dcbbe1ac6806b8a5bbfc6efbd81422ffac191ade48a93023b7b"
+ },
+ "id_pages": {
+  "0x128000": "72f75590b655e078738f7d4dc78542a2c81cd897fff096b87b7b41811e8effb8",
+  "0x4a8000": "99b5fa8e61d1161fd1d498033080e3632cae23b546ff09446351f77b0a99ae22",
+  "0x85d000": "46d59faac4682d268ecafdfade0496278dff08de443f3c2eba26dae5c3b383e3",
+  "0xae7000": "edd93291b72f23f1cf0ed2abe77d82306da7e3c490ca38de2bc72460cb42fd92"
+ },
+ "cp_sites": [
+  {
+   "name": "C",
+   "address": "0xe00800",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "R1+0x0",
+   "address": "0xe012ac",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "R1+0x4",
+   "address": "0xe012b0",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "R2+0x0",
+   "address": "0xe01c3c",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "R2+0x4",
+   "address": "0xe01c40",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "D+0x4",
+   "address": "0xe01f50",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "T.tim",
+   "address": "0xe0151c",
+   "length": 24,
+   "soft": 0
+  },
+  {
+   "name": "T.tim_b",
+   "address": "0xe018dc",
+   "length": 24,
+   "soft": 0
+  },
+  {
+   "name": "W+0x12",
+   "address": "0xe9b3dc",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "W+0x1a",
+   "address": "0xe9b3e4",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "A+0x16",
+   "address": "0xe9b9d0",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "A+0x1a",
+   "address": "0xe9b9d4",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "A+0x1e",
+   "address": "0xe9b9d8",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "LC+0x8",
+   "address": "0xe9be92",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "LC+0xc",
+   "address": "0xe9be96",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "CR+0x6",
+   "address": "0xe00b92",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "CR+0x12",
+   "address": "0xe00b9e",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "G",
+   "address": "0xda6572",
+   "length": 2,
+   "soft": 0
+  },
+  {
+   "name": "L",
+   "address": "0xe9c0f4",
+   "length": 8,
+   "soft": 0
+  },
+  {
+   "name": "record_left",
+   "address": "0xd5f5a0",
+   "length": 3000,
+   "soft": 0
+  },
+  {
+   "name": "record_right",
+   "address": "0xd60158",
+   "length": 3000,
+   "soft": 0
+  },
+  {
+   "name": "stored_record",
+   "address": "0x2197554",
+   "length": 348,
+   "soft": 1
+  },
+  {
+   "name": "outsize",
+   "address": "0x1626bb4",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard0",
+   "address": "0x1626bac",
+   "length": 8,
+   "soft": 1
+  },
+  {
+   "name": "outsize_guard1",
+   "address": "0x1626bb8",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen0",
+   "address": "0x1db34c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen1",
+   "address": "0x1db350",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen2",
+   "address": "0x1dbb44",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen3",
+   "address": "0x60b354",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen4",
+   "address": "0x60b358",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen5",
+   "address": "0x60b35c",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen6",
+   "address": "0x60b360",
+   "length": 4,
+   "soft": 1
+  },
+  {
+   "name": "screen7",
+   "address": "0x60cf40",
+   "length": 4,
+   "soft": 1
+  }
+ ],
+ "lm_sites": 6,
+ "av_sites": 47,
+ "av_guards": [
+  "unit_rows_0_6",
+  "clip_rows_2_7",
+  "descriptors_1_3"
+ ],
+ "dump_ranges": [
+  [
+   "shadow",
+   "0x11d6000",
+   2
+  ],
+  [
+   "matrix",
+   "0x10ea000",
+   3
+  ],
+  [
+   "sizetable",
+   "0x1626000",
+   1
+  ],
+  [
+   "records",
+   "0x2196000",
+   4
+  ],
+  [
+   "kprint",
+   "0xe0000",
+   32
+  ],
+  [
+   "bootlog",
+   "0xc0000",
+   8
+  ],
+  [
+   "context",
+   "0x13af000",
+   5
+  ],
+  [
+   "resizework",
+   "0x13c2000",
+   1
+  ],
+  [
+   "resizestate",
+   "0x1639000",
+   5
+  ],
+  [
+   "wbuf",
+   "0x13a6000",
+   3
+  ],
+  [
+   "display",
+   "0x1db000",
+   1
+  ],
+  [
+   "dsqcalc",
+   "0x60b000",
+   1
+  ],
+  [
+   "crop",
+   "0x60c000",
+   1
+  ],
+  [
+   "paneltype",
+   "0x1703000",
+   1
+  ],
+  [
+   "desqueeze",
+   "0x12c0000",
+   1
+  ],
+  [
+   "panelcode",
+   "0xce4000",
+   1
+  ]
+ ],
+ "designs": {
+  "ogsq_fx6_v1": "813409ec7bc372333317fb0b549da23d2fb7f99b9ebeb22cdf268179dc01d79f",
+  "outsz2560_fx6_v1": "2300c6cfcb02c35937ea0f4d9ee2738d39f9c4201ab85cb02889cc786c430cc3",
+  "ogfile2560_xavc_fx6_v2": "2973c644eb0fd2ebb14cf57014888a803739b8b856bcf58f73a46ec9013817fc",
+  "lcd32_fx6_v1": "55b9995533f3c08c295eb82ec070822ebd33de384175c77aae3c1139759b4546"
+ }
+}
