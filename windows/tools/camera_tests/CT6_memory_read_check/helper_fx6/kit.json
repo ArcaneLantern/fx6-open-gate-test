@@ -1,7 +1,23 @@
 {
- "about": "The FX6 kit's choice of designs and the facts the generators need about them (written 2026-11-26 with the designs; read by gen_fx6.py, gen_fx6_write.py, build_fx6_write.sh, emu_fx6*.py, publish_fx6.py)",
+ "about": "The FX6 kit's choice of designs and the facts the generators need about them (written 2026-11-26 with the designs; the memory step added the same day after the testers' first runs; read by gen_fx6.py, gen_fx6_write.py, build_fx6_write.sh, emu_fx6*.py, publish_fx6.py)",
  "encoder": "ogfile2560_xavc_fx6_v2",
  "encoder_v1": "ogfile2560_xavc_fx6_v1",
+ "dmm": "dmm7slot_fx6_v1",
+ "dmm_alt": "dmm7slot_fx6_v2",
+ "dmm_back": "dmm7slot_fx6_back",
+ "dmm_regions": [
+  [
+   "0x213ef64",
+   "0x2144900"
+  ]
+ ],
+ "dmm_pages": [
+  [
+   "dmmcfg",
+   "0x213e000",
+   7
+  ]
+ ],
  "screen": "lcd32_fx6_v1",
  "screen_regions": {
   "sites": [
@@ -99,9 +115,9 @@
    "second_output_panel_type_0x1703a74": "0x1703a74"
   },
   "words": {
-   "panel_type_table_0x1dbb40 (devices 1/2; stock ff010002, applied ff080002)": [
+   "panel_type_table_0x1dbb40 (32-bit words for devices 0..3; stock ff000000 01000000 00000000 02000000; applied: second word 08000000)": [
     "0x1dbb40",
-    4
+    16
    ],
    "ratio_16x9_0x1db34c (stock 05e00920102202e0 = 9/16; applied 05e00220032202e0 = 2/3)": [
     "0x1db34c",
@@ -234,6 +250,9 @@
   "0x3b0000"
  ],
  "design_source": [
+  "build/emu_dmm_server.py",
+  "build/parse_dmmcfg.py",
+  "build/build_dmm_fx6.py",
   "build/build_lcd_fx6.py",
   "build/emu_lcd_fx6.py",
   "build/build_ogfile_fx6.py",

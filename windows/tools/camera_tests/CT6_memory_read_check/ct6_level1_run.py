@@ -520,6 +520,10 @@ def rules(lib):
 
 
 GUARDS = []                                        # the guard of the current session is the last one
+# Libraries of the calling kit, SHA-256 -> name. A session that is cut off after its write (camera restart, cable, Ctrl+C) leaves its library on
+# the service partition, which is flash: it is still there after a cold boot, and every later step, having another library, refused to go on
+# (an FX3 tester, 2026-11-26). A file whose hash is listed here is deleted and the run goes on. Empty (this script by itself): nothing changes.
+KNOWN_LIBS = {}
 
 
 class Guard(c.ServiceGuard):
@@ -639,6 +643,20 @@ def remove(session, camera, out):
     else:
         session.say("!! THE LIBRARY MAY STILL BE ON THE SERVICE PARTITION (/tmp/jiritsu/libJit.so). It is not loaded again by itself "
                     "(F409: only with /tmp/jmode set). Cold boot the camera, then run this script with --remove-only.")
+
+
+def remove_leftover(session, camera, out, data):
+    """Delete a library an earlier session left behind (its hash is in KNOWN_LIBS) and confirm; stops if it is still there."""
+    sha = c.sha256(data)
+    session.say("A library from an earlier session is still on the service partition: %s (%d bytes, SHA-256 %s...)." % (KNOWN_LIBS[sha], len(data), sha[:16]))
+    session.say("That session was cut off before it could delete it. It is not loaded again by itself. Deleting it now.")
+    left = {}
+    remove(session, camera, left)
+    gone = left.get("library_on_camera_after") is False
+    out["leftover_removed"] = {"sha256": sha, "name": KNOWN_LIBS[sha], "bytes": len(data), "remove_status": left.get("remove_status"), "gone": gone}
+    if not gone:
+        raise c.StopTest("the library an earlier session left on the service partition (%s) could not be deleted (%s). Nothing was written."
+                         % (KNOWN_LIBS[sha], text(left.get("remove_status"))))
 
 
 def check_result(data):
@@ -1092,11 +1110,16 @@ def body_run(session, camera, lib):
     out = session.results["ct6"] = {"library_bytes": len(lib), "library_sha256": LIB_SHA256, "library_sent": False}
     known_answer(session, camera)
     there, data = read(camera, LIB_PATH)
+    if there and c.sha256(data) in KNOWN_LIBS:      # left by an earlier session of this kit: delete it, then go on
+        remove_leftover(session, camera, out, data)
+        there = False
     if there:
         ours = c.sha256(data) == LIB_SHA256
         raise c.StopTest("a libJit.so is already on the service partition (%d bytes, %s). Nothing was written. %s"
                          % (len(data), "it is this script's library from an earlier run" if ours else "it is NOT this script's library",
-                            "Use --remove-only." if ours else "It is left alone."))
+                            "Use --remove-only." if ours else "It is left alone." if not KNOWN_LIBS else
+                            "It is none of this kit's libraries (SHA-256 %s) and is left alone. To delete it, run the read-only check with --remove-library and that SHA-256."
+                            % c.sha256(data)))
     there, old = read(camera, RESULT_PATH)
     if there and CLEAR_SHA and c.sha256(old) == CLEAR_SHA:          # --clear-result: it is a result already saved here; delete it and go on
         session.say("An earlier result is on the RAM disk and is the one already saved here (%d bytes). Deleting it." % len(old))
@@ -1387,6 +1410,10 @@ def body_remove_only(session, camera, lib):
     if not there:
         out["library_on_camera_after"] = False
         session.say("There is no /tmp/jiritsu/libJit.so on the camera. Nothing to remove.")
+        return
+    if c.sha256(data) in KNOWN_LIBS:               # any library of the calling kit, not only this step's
+        remove_leftover(session, camera, out, data)
+        out["library_on_camera_after"] = False
         return
     if c.sha256(data) != LIB_SHA256:
         raise c.StopTest("the libJit.so on the camera (%d bytes) is not this script's library. It is left alone." % len(data))

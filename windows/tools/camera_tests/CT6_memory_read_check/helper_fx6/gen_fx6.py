@@ -20,7 +20,7 @@ EX = ROOT / "work/extracted/fx6_602/0700_part_image/dev"
 OTHER = {b: ROOT / "work/extracted" / b / "0700_part_image/dev/nflasha8/cpapp-b.bin" for b in ("fx3_702", "a7s3_501", "zve1_202", "a7c2_201", "fx2_101", "fx30_601")}
 DES = ROOT / "modding/designs"
 BASE = 0x108000
-LABEL = "fx6read_v1"
+LABEL = "fx6read_v2"                                  # v2 (2026-11-26, after the testers' first runs): the output-plane memory words and their table pages
 CP_LO, CP_HI = 0xC0000, 0x2200000                     # coprocessor addresses a read may have: its logs (tomco.txt: same as the FX3's), image and RAM tables
 AVCAM_PHYS, AVCAM_RESERVE = 0x401000000, "@0x401000000"   # kemco.txt (6.02, appli): memrsv=0x01000000@0x401000000:ex, as on the FX3; checked on the camera before any read
 ID_FILES = {"/libmpr.so": "nflasha15/lib/libmpr.so", "/libsencore.so": "nflasha15/lib/libsencore.so", "/libJiritsu.so": "nflasha15/lib/libJiritsu.so"}
@@ -43,7 +43,7 @@ DUMP_ADDRESSES = {"second_scaler_block": 0x163B2E4 - 0x44C, "second_scaler_input
                   "resize_settings": 0x163CBCC, "division_block": 0x163B2E4, "core_log_record": 0x163BAC0}
 MATRIX, COLMAP, IDS, RECS, REC = 0x10EA3A8, 0xE007A0, 0xE009FC, 0x2196504, 0x15C
 SIZE_TABLE = 0x1626B7C
-DESIGNS = {"sensor": "ogsq_fx6_v1", "size": "outsz2560_fx6_v1"}         # the encoder and screen designs are named in kit.json
+DESIGNS = {"sensor": "ogsq_fx6_v1", "size": "outsz2560_fx6_v1"}         # the encoder, screen and memory designs are named in kit.json
 
 
 def c_bytes(b):
@@ -54,6 +54,25 @@ def kit_designs():
     """The encoder and screen design names this kit carries (kit.json beside this file, written when the designs are chosen)."""
     k = json.loads((HERE / "kit.json").read_text(encoding="utf8"))
     return k
+
+
+def dmm_reference(kit, dm, cfgbin):
+    """What the PC needs to read the output-plane part of a dump: the words of each variant, and the two layouts' records."""
+    import sys
+    sys.path.insert(0, str(ROOT / "build"))
+    import parse_dmmcfg as P
+    cfg = P.Config(P.find_file("fx6_602"), "fx6_602")
+    base = P.RAM["fx6_602"]["unit_records"]
+    assert base == int(kit["dmm_regions"][0][0], 16)
+    lay = {}
+    for gid in (0x26, 0x28):
+        g = next(g for g in cfg.groups if g["gid"] == gid)
+        lay[hex(gid)] = {"first_record": hex(base + g["units"][0]["seq"] * 0x14), "records": len(g["units"]),
+                         "stock": [[hex(u["key"]), u["size"]] for u in g["units"]]}
+    variant = {d["design"]: [s["ram_address"] for s in d["sites"]] for d in dm[:-1]}
+    return {"unit_records": hex(base), "end": kit["dmm_regions"][0][1], "parent_size": 106954752, "plane_key": "0x3f1", "plane_bytes_needed": 14745600,
+            "layouts": lay, "variants": variant,
+            "words": [{"address": s["ram_address"], "stock": s["old"], "new": s["new"], "note": s["note"]} for s in dm[-1]["sites"]]}
 
 
 def main():
@@ -106,7 +125,13 @@ def main():
         sites.append(("outsize", int(s["ram_address"], 16), bytes.fromhex(s["old"]), bytes.fromhex(s["new"]), 1))
     for k, g in enumerate(oz["guards"]):
         sites.append((f"outsize_guard{k}", int(g["ram_address"], 16), bytes.fromhex(g["bytes"]), None, 1))
-    for k, s in enumerate(sc["sites"] if sc else ()):     # soft: the screen step is optional (apply --no-screen); reported, not counted
+    dm = [json.loads((DES / (kit[k] + ".json")).read_text(encoding="utf8")) for k in ("dmm", "dmm_alt", "dmm_back") if kit.get(k)]
+    cfgbin = (EX / "nflasha8/DmmCfg.bin").read_bytes()
+    for k, s in enumerate(dm[-1]["sites"] if dm else ()):   # the output-plane words (the put-back design lists every word of both variants)
+        f = int(s["file_offset"], 16)
+        assert dm[-1]["dmmcfg_sha256"] == hashlib.sha256(cfgbin).hexdigest() and cfgbin[f:f + 4] == bytes.fromhex(s["old"])
+        sites.append((f"dmm{k}", int(s["ram_address"], 16), bytes.fromhex(s["old"]), bytes.fromhex(s["new"]), 0))
+    for k, s in enumerate(sc["sites"] if sc else ()):     # soft: the screen step is optional (apply --screen); reported, not counted
         a = int(s["ram_address"], 16)
         assert cp[a - BASE:a - BASE + 4] == bytes.fromhex(s["old"])
         sites.append((f"screen{k}", a, bytes.fromhex(s["old"]), bytes.fromhex(s["new"]), 1))
@@ -139,14 +164,14 @@ def main():
     out.append("static const struct av_guard av_guards[] = {\n" + "\n".join(rows) + "\n};")
     av_lo = min([so for so, _ in spans] + [o for _, o, _ in guards]) & ~0xFFF
     out.append(f"#define AV_LO {av_lo:#x}UL\n#define AV_HI {av_hi:#x}UL")
-    dump = DUMP_RANGES + [(n, int(a, 16), k) for n, a, k in kit.get("display_pages", [])]
+    dump = DUMP_RANGES + [(n, int(a, 16), k) for n, a, k in kit.get("display_pages", []) + kit.get("dmm_pages", [])]
     rows = [f'    {{"{n}", {a:#x}, {k}}},' for n, a, k in dump]
     assert all(CP_LO <= a and a + 4096 * k <= CP_HI for _, a, k in dump)
     out.append("#if DUMP\nstatic const struct dump_range dump_ranges[] = {\n" + "\n".join(rows) + "\n};\n#endif")
     text = ("/* Generated by gen_fx6.py from the FX6 6.02 files and the port designs. Do not edit. */\n#ifndef DUMP\n#define DUMP 0\n#endif\n"
             + "\n".join(blobs) + "\n" + "\n".join(out) + "\n")
     (HERE / "fx6_expected.h").write_text(text, encoding="utf8", newline="\n")
-    used = [og, oz, fl] + ([sc] if sc else [])
+    used = [og, oz, fl] + ([sc] if sc else []) + dm
     facts = {"label": LABEL, "cp_lo": CP_LO, "cp_hi": CP_HI, "avcam_phys": AVCAM_PHYS, "avcam_reserve": AVCAM_RESERVE,
              "id_files": {n: hashlib.sha256((EX / p).read_bytes()).hexdigest() for n, p in ID_FILES.items()},
              "id_pages": {hex(a): hashlib.sha256(cp[a - BASE:a - BASE + 4096]).hexdigest() for a in ID_PAGES},
@@ -170,6 +195,7 @@ def main():
            "dump_addresses": {k: hex(v) for k, v in DUMP_ADDRESSES.items()},
            "stored_record_design": {"mode": "0x8c0", "index": og["mode_index"], "stock": sr["stock"], "design": sr["design"]},
            "display": kit.get("display_reference", {}),
+           "dmm": dmm_reference(kit, dm, cfgbin) if dm else {},
            "screen_words": [{"address": s["ram_address"], "stock": s["old"], "new": s["new"], "note": s["note"]} for s in (sc["sites"] if sc else ())]}
     assert len(ref["emulated_stock_records"]) == 40
     (HERE / "fx6_reference.json").write_text(json.dumps(ref) + "\n", encoding="utf8", newline="\n")

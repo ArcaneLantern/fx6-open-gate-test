@@ -12,6 +12,9 @@ SEN="$H/../../../work/extracted/fx6_602/0700_part_image/dev/nflasha15/lib/libsen
 ENC="$(sed -n 's/.*"encoder": *"\([^"]*\)".*/\1/p' "$H/kit.json")"
 ENC1="$(sed -n 's/.*"encoder_v1": *"\([^"]*\)".*/\1/p' "$H/kit.json")"
 SCR="$(sed -n 's/.*"screen": *"\([^"]*\)".*/\1/p' "$H/kit.json")"
+DMM="$(sed -n 's/.*"dmm": *"\([^"]*\)".*/\1/p' "$H/kit.json")"
+DMMALT="$(sed -n 's/.*"dmm_alt": *"\([^"]*\)".*/\1/p' "$H/kit.json")"
+DMMBACK="$(sed -n 's/.*"dmm_back": *"\([^"]*\)".*/\1/p' "$H/kit.json")"
 cd "$H/../helper"
 CC=(../../../work/venv_zig/Scripts/python.exe -m ziglang cc -target aarch64-linux-gnu -std=gnu11 -O1 -Wall -Wextra -Werror -fPIC -shared -nostdlib -ffreestanding
     -fno-stack-protector -fno-builtin -fno-asynchronous-unwind-tables -Wl,-soname,libJit.so -Wl,--no-undefined -Wl,-z,now -g0 -s -Wl,-z,max-page-size=4096)
@@ -35,7 +38,14 @@ if [ -n "$SCR" ]; then
     "${CC[@]}" -DLEVEL=$L "-DWORDS_H=\"expected_words_$SCR.h\"" readcheck.c "$SEN" -o "$H/libJit_fx6_S$L.so"
   done
 fi
+# The output-plane step (added after the testers' first runs): level 16 with the memory words (kit.json "dmm": D16; "dmm_alt": R16), and one
+# put-back, level 17 with the words of both ("dmm_back": D17; level 17 skips a site that is already stock).
+if [ -n "$DMM" ]; then
+  "${CC[@]}" -DLEVEL=16 "-DWORDS_H=\"expected_words_$DMM.h\"" readcheck.c "$SEN" -o "$H/libJit_fx6_D16.so"
+  "${CC[@]}" -DLEVEL=16 "-DWORDS_H=\"expected_words_$DMMALT.h\"" readcheck.c "$SEN" -o "$H/libJit_fx6_R16.so"
+  "${CC[@]}" -DLEVEL=17 "-DWORDS_H=\"expected_words_$DMMBACK.h\"" readcheck.c "$SEN" -o "$H/libJit_fx6_D17.so"
+fi
 cd "$H"
 for L in 5 6 16 17 19 20; do echo "$(sha256sum libJit_fx6_L$L.so | cut -d' ' -f1) $(stat -c %s libJit_fx6_L$L.so) level $L"; done
-for N in N19 N20 S16 S17; do [ -f libJit_fx6_$N.so ] && echo "$(sha256sum libJit_fx6_$N.so | cut -d' ' -f1) $(stat -c %s libJit_fx6_$N.so) step $N"; done
+for N in N19 N20 S16 S17 D16 R16 D17; do [ -f libJit_fx6_$N.so ] && echo "$(sha256sum libJit_fx6_$N.so | cut -d' ' -f1) $(stat -c %s libJit_fx6_$N.so) step $N"; done
 true

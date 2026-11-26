@@ -7,6 +7,8 @@ one whole page, direction 0, into the allocated buffer is accepted). Cases, for 
   stock        an FX6 with the 6.02 files and stock memory                         -> every check same, verdict READY
   applied      every design site holding its new bytes, the LCD step included      -> TARGET everywhere, verdict READY
   no-screen    the open-gate state without the LCD step                            -> open-gate TARGET, screen words STOCK, READY
+  alt-memory   the open-gate state with the memory step's variant (kit.json "dmm_alt") -> its ten words TARGET, READY
+  no-memory    the earlier kit's state: no memory step                              -> the memory words STOCK, the rest TARGET, READY
   no-meta      the encoder step without the file-header heights (if the kit has one) -> its sites TARGET, the heights STOCK, READY
   fx3          the FX3 7.02 files and coprocessor image (the nearest other body)   -> identity DIFFERS, verdict NOT READY
   a7s3         the A7S III 5.01 files and coprocessor image                        -> identity DIFFERS, verdict NOT READY
@@ -88,7 +90,16 @@ class Run(E.Run):
         return self
 
 
-def model(build="fx6_602", applied=False, screen=True, reserve=True, exists=False, enc=None):
+def dmm_table():
+    """The camera's run-time copy of DmmCfg.bin's unit records (build/build_dmm_fx6.py rebuilds it from the file; a tester's dump equals it)."""
+    sys.path.insert(0, str(ROOT / "build"))
+    import build_dmm_fx6 as B
+    cfg = B.P.Config(B.P.find_file("fx6_602"), "fx6_602")
+    base, data, _ = B.ram_table(cfg)
+    return base, bytearray(data)
+
+
+def model(build="fx6_602", applied=False, screen=True, reserve=True, exists=False, enc=None, dmm="dmm"):
     cp = bytearray(ex(build, "nflasha8/cpapp-b.bin"))
     av = bytearray(ex(build, "nflasha3/av-cam.bin"))
     libs = {n: ex(build, "nflasha15/lib" + n) for n in ("/libmpr.so", "/libsencore.so", "/libJiritsu.so")}
@@ -103,6 +114,13 @@ def model(build="fx6_602", applied=False, screen=True, reserve=True, exists=Fals
             ram[int(g["ram_address"], 16)] = bytes.fromhex(g["bytes"])
         for s in oz["sites"]:
             ram[int(s["ram_address"], 16)] = bytes.fromhex(s["new" if applied else "old"])
+        if KIT.get("dmm"):                       # the output-plane table; `dmm` names the kit.json design applied to it ("dmm", "dmm_alt") or None
+            base, table = dmm_table()
+            for s in (design(KIT[dmm])["sites"] if applied and dmm else ()):
+                a = int(s["ram_address"], 16)
+                assert table[a - base:a - base + 4] == bytes.fromhex(s["old"])
+                table[a - base:a - base + 4] = bytes.fromhex(s["new"])
+            ram[base] = bytes(table)
     if applied:
         for p in og["patches"]:
             a, new = int(p["addr"], 16), bytes.fromhex(p["new"])
@@ -124,7 +142,7 @@ def model(build="fx6_602", applied=False, screen=True, reserve=True, exists=Fals
     files["/proc/cmdline"] = b"console=ttynull0 " + (b"memrsv=0x01000000@0x401000000:ex " if reserve else b"") + b"warm.mode=2"
     for n, b in libs.items():
         files["/usr/lib" + n] = b
-    dirs = {"/tmp_wbshd", "/proc", "/proc/self", "/sys/module/liro/parameters", "/log", "/usr/lib"}
+    dirs = {"/tmp_wbshd", "/proc", "/proc/self", "/sys/module/liro/parameters", "/log", "/log/cp", "/usr/lib"}
     if exists:
         files[E.RESULT] = b"earlier result\n"
     phys = {FACTS["avcam_phys"]: bytes([0x5A]) * 0x1000 + bytes(av[0x1000:]),      # the first page is not as in the file on a camera (A7S III, 2026-11-21)
@@ -144,8 +162,16 @@ def main():
     ok = True
     screen_n = sum(1 for s in FACTS["cp_sites"] if s["name"].startswith("screen"))
     hard = [s for s in FACTS["cp_sites"] if not s["name"].startswith(("outsize_guard",))]
+    dmm_n = sum(1 for s in FACTS["cp_sites"] if s["name"].startswith("dmm"))
+    dmm_in = {k: len(design(KIT[k])["sites"]) for k in ("dmm", "dmm_alt") if KIT.get(k)}      # the words one variant changes (the check lists both variants')
+    other = dmm_n - dmm_in.get("dmm", 0)         # memory words the default variant leaves stock
+    hard = hard[:len(hard) - other] if other else hard
     cases = [("stock", {}, ("VERDICT READY", "STOCK")), ("applied", {"applied": True}, ("VERDICT READY", "TARGET")),
              ("no-screen", {"applied": True, "screen": False}, ("VERDICT READY", "TARGET"))]
+    if KIT.get("dmm_alt"):
+        cases.append(("alt-memory", {"applied": True, "dmm": "dmm_alt"}, ("VERDICT READY", "TARGET")))
+    if KIT.get("dmm"):
+        cases.append(("no-memory", {"applied": True, "dmm": None}, ("VERDICT READY", "TARGET")))
     if KIT.get("encoder_v1"):
         cases.append(("no-meta", {"applied": True, "enc": KIT["encoder_v1"]}, ("VERDICT READY", "TARGET")))
     cases += [("fx3", {"build": "fx3_702"}, ("VERDICT NOT READY", "DIFFERS from the 6.02 update")),
@@ -177,6 +203,12 @@ def main():
                     st = sum(1 for ln in text.split("\n") if ln.startswith("site screen") and ln.endswith("  STOCK"))
                     if st != screen_n or text.count("TARGET") < len(hard) - screen_n + FACTS["lm_sites"] + FACTS["av_sites"]:
                         problems.append("no-screen: %d screen words stock (want %d)" % (st, screen_n))
+                if case in ("applied", "alt-memory", "no-memory"):
+                    want_t = 0 if case == "no-memory" else dmm_in["dmm_alt" if case == "alt-memory" else "dmm"] if dmm_n else 0
+                    got_t = sum(1 for ln in text.split("\n") if ln.startswith("site dmm") and ln.endswith("  TARGET"))
+                    got_s = sum(1 for ln in text.split("\n") if ln.startswith("site dmm") and ln.endswith("  STOCK"))
+                    if (got_t, got_s) != (want_t, dmm_n - want_t):
+                        problems.append("%s: %d memory words target, %d stock (want %d and %d)" % (case, got_t, got_s, want_t, dmm_n - want_t))
                 if case == "no-meta":
                     v1 = design(KIT["encoder_v1"])
                     keys = {(p["binary"], p["file_off"]) for p in v1["patches"]}

@@ -50,129 +50,151 @@ static const unsigned char B44[] = {0,15,112,8};
 static const unsigned char B45[] = {0,15,0,10};
 static const unsigned char B46[] = {0,15,112,8,62,4,0,0};
 static const unsigned char B47[] = {217,2,0,0};
-static const unsigned char B48[] = {5,224,9,32};
-static const unsigned char B49[] = {5,224,2,32};
-static const unsigned char B50[] = {16,34,2,224};
-static const unsigned char B51[] = {3,34,2,224};
-static const unsigned char B52[] = {1,0,0,0};
-static const unsigned char B53[] = {8,0,0,0};
-static const unsigned char B54[] = {79,240,3,10};
-static const unsigned char B55[] = {79,240,1,10};
-static const unsigned char B56[] = {8,38,2,224};
-static const unsigned char B57[] = {3,38,2,224};
-static const unsigned char B58[] = {79,240,45,10};
-static const unsigned char B59[] = {79,240,20,10};
-static const unsigned char B60[] = {104,38,120,105};
-static const unsigned char B61[] = {39,38,120,105};
-static const unsigned char B62[] = {0,120,4,40};
-static const unsigned char B63[] = {0,120,5,40};
-static const unsigned char B64[] = {112,8};
-static const unsigned char B65[] = {0,10};
-static const unsigned char B66[] = {112,8};
-static const unsigned char B67[] = {0,10};
-static const unsigned char B68[] = {112,8};
-static const unsigned char B69[] = {0,10};
-static const unsigned char B70[] = {112,8};
-static const unsigned char B71[] = {0,10};
-static const unsigned char B72[] = {112,8,0,0};
-static const unsigned char B73[] = {0,10,0,0};
-static const unsigned char B74[] = {112,8};
-static const unsigned char B75[] = {0,10};
-static const unsigned char B76[] = {112,8};
-static const unsigned char B77[] = {0,10};
-static const unsigned char B78[] = {112,8,0,0};
-static const unsigned char B79[] = {0,10,0,0};
-static const unsigned char B80[] = {112,8};
-static const unsigned char B81[] = {0,10};
-static const unsigned char B82[] = {112,8};
-static const unsigned char B83[] = {0,10};
-static const unsigned char B84[] = {112,8,0,0};
-static const unsigned char B85[] = {0,10,0,0};
-static const unsigned char B86[] = {48,4};
-static const unsigned char B87[] = {0,5};
+static const unsigned char B48[] = {241,3,0,0};
+static const unsigned char B49[] = {253,7,0,0};
+static const unsigned char B50[] = {0,128,202,0};
+static const unsigned char B51[] = {0,0,225,0};
+static const unsigned char B52[] = {0,128,202,0};
+static const unsigned char B53[] = {0,0,225,0};
+static const unsigned char B54[] = {0,128,202,0};
+static const unsigned char B55[] = {0,0,225,0};
+static const unsigned char B56[] = {0,128,202,0};
+static const unsigned char B57[] = {0,0,225,0};
+static const unsigned char B58[] = {0,128,202,0};
+static const unsigned char B59[] = {0,0,225,0};
+static const unsigned char B60[] = {0,128,202,0};
+static const unsigned char B61[] = {0,0,225,0};
+static const unsigned char B62[] = {0,128,202,0};
+static const unsigned char B63[] = {0,0,225,0};
+static const unsigned char B64[] = {0,128,202,0};
+static const unsigned char B65[] = {0,0,225,0};
+static const unsigned char B66[] = {241,3,0,0};
+static const unsigned char B67[] = {253,7,0,0};
+static const unsigned char B68[] = {0,128,202,0};
+static const unsigned char B69[] = {0,16,0,0};
+static const unsigned char B70[] = {5,224,9,32};
+static const unsigned char B71[] = {5,224,2,32};
+static const unsigned char B72[] = {16,34,2,224};
+static const unsigned char B73[] = {3,34,2,224};
+static const unsigned char B74[] = {1,0,0,0};
+static const unsigned char B75[] = {8,0,0,0};
+static const unsigned char B76[] = {79,240,3,10};
+static const unsigned char B77[] = {79,240,1,10};
+static const unsigned char B78[] = {8,38,2,224};
+static const unsigned char B79[] = {3,38,2,224};
+static const unsigned char B80[] = {79,240,45,10};
+static const unsigned char B81[] = {79,240,20,10};
+static const unsigned char B82[] = {104,38,120,105};
+static const unsigned char B83[] = {39,38,120,105};
+static const unsigned char B84[] = {0,120,4,40};
+static const unsigned char B85[] = {0,120,5,40};
+static const unsigned char B86[] = {112,8};
+static const unsigned char B87[] = {0,10};
 static const unsigned char B88[] = {112,8};
 static const unsigned char B89[] = {0,10};
 static const unsigned char B90[] = {112,8};
 static const unsigned char B91[] = {0,10};
-static const unsigned char B92[] = {112,8,0,0};
-static const unsigned char B93[] = {0,10,0,0};
-static const unsigned char B94[] = {48,4};
-static const unsigned char B95[] = {0,5};
+static const unsigned char B92[] = {112,8};
+static const unsigned char B93[] = {0,10};
+static const unsigned char B94[] = {112,8,0,0};
+static const unsigned char B95[] = {0,10,0,0};
 static const unsigned char B96[] = {112,8};
 static const unsigned char B97[] = {0,10};
 static const unsigned char B98[] = {112,8};
 static const unsigned char B99[] = {0,10};
 static const unsigned char B100[] = {112,8,0,0};
 static const unsigned char B101[] = {0,10,0,0};
-static const unsigned char B102[] = {48,4};
-static const unsigned char B103[] = {0,5};
+static const unsigned char B102[] = {112,8};
+static const unsigned char B103[] = {0,10};
 static const unsigned char B104[] = {112,8};
 static const unsigned char B105[] = {0,10};
-static const unsigned char B106[] = {112,8};
-static const unsigned char B107[] = {0,10};
-static const unsigned char B108[] = {112,8,0,0};
-static const unsigned char B109[] = {0,10,0,0};
-static const unsigned char B110[] = {48,4};
-static const unsigned char B111[] = {0,5};
+static const unsigned char B106[] = {112,8,0,0};
+static const unsigned char B107[] = {0,10,0,0};
+static const unsigned char B108[] = {48,4};
+static const unsigned char B109[] = {0,5};
+static const unsigned char B110[] = {112,8};
+static const unsigned char B111[] = {0,10};
 static const unsigned char B112[] = {112,8};
 static const unsigned char B113[] = {0,10};
-static const unsigned char B114[] = {112,8};
-static const unsigned char B115[] = {0,10};
-static const unsigned char B116[] = {112,8,0,0};
-static const unsigned char B117[] = {0,10,0,0};
-static const unsigned char B118[] = {48,4};
-static const unsigned char B119[] = {0,5};
+static const unsigned char B114[] = {112,8,0,0};
+static const unsigned char B115[] = {0,10,0,0};
+static const unsigned char B116[] = {48,4};
+static const unsigned char B117[] = {0,5};
+static const unsigned char B118[] = {112,8};
+static const unsigned char B119[] = {0,10};
 static const unsigned char B120[] = {112,8};
 static const unsigned char B121[] = {0,10};
-static const unsigned char B122[] = {112,8};
-static const unsigned char B123[] = {0,10};
-static const unsigned char B124[] = {112,8,0,0};
-static const unsigned char B125[] = {0,10,0,0};
-static const unsigned char B126[] = {48,4};
-static const unsigned char B127[] = {0,5};
+static const unsigned char B122[] = {112,8,0,0};
+static const unsigned char B123[] = {0,10,0,0};
+static const unsigned char B124[] = {48,4};
+static const unsigned char B125[] = {0,5};
+static const unsigned char B126[] = {112,8};
+static const unsigned char B127[] = {0,10};
 static const unsigned char B128[] = {112,8};
 static const unsigned char B129[] = {0,10};
-static const unsigned char B130[] = {112,8};
-static const unsigned char B131[] = {0,10};
-static const unsigned char B132[] = {112,8,0,0};
-static const unsigned char B133[] = {0,10,0,0};
-static const unsigned char B134[] = {48,4};
-static const unsigned char B135[] = {0,5};
+static const unsigned char B130[] = {112,8,0,0};
+static const unsigned char B131[] = {0,10,0,0};
+static const unsigned char B132[] = {48,4};
+static const unsigned char B133[] = {0,5};
+static const unsigned char B134[] = {112,8};
+static const unsigned char B135[] = {0,10};
 static const unsigned char B136[] = {112,8};
 static const unsigned char B137[] = {0,10};
-static const unsigned char B138[] = {112,8};
-static const unsigned char B139[] = {0,10};
-static const unsigned char B140[] = {112,8,0,0};
-static const unsigned char B141[] = {0,10,0,0};
-static const unsigned char B142[] = {48,4};
-static const unsigned char B143[] = {0,5};
+static const unsigned char B138[] = {112,8,0,0};
+static const unsigned char B139[] = {0,10,0,0};
+static const unsigned char B140[] = {48,4};
+static const unsigned char B141[] = {0,5};
+static const unsigned char B142[] = {112,8};
+static const unsigned char B143[] = {0,10};
 static const unsigned char B144[] = {112,8};
 static const unsigned char B145[] = {0,10};
-static const unsigned char B146[] = {112,8};
-static const unsigned char B147[] = {0,10};
-static const unsigned char B148[] = {112,8,0,0};
-static const unsigned char B149[] = {0,10,0,0};
-static const unsigned char B150[] = {48,4};
-static const unsigned char B151[] = {0,5};
+static const unsigned char B146[] = {112,8,0,0};
+static const unsigned char B147[] = {0,10,0,0};
+static const unsigned char B148[] = {48,4};
+static const unsigned char B149[] = {0,5};
+static const unsigned char B150[] = {112,8};
+static const unsigned char B151[] = {0,10};
 static const unsigned char B152[] = {112,8};
 static const unsigned char B153[] = {0,10};
-static const unsigned char B154[] = {112,8};
-static const unsigned char B155[] = {0,10};
-static const unsigned char B156[] = {112,8,0,0};
-static const unsigned char B157[] = {0,10,0,0};
-static const unsigned char B158[] = {48,4};
-static const unsigned char B159[] = {0,5};
-static const unsigned char B160[] = {0,32,0,0,224,16,0,0,1,0,0,0};
-static const unsigned char B161[] = {0,15,0,0,0,10,0,0,16,0,0,0};
-static const unsigned char B162[] = {0,2,128,82};
-static const unsigned char B163[] = {96,0,128,82};
-static const unsigned char B164[] = {32,1,128,82};
-static const unsigned char B165[] = {64,0,128,82};
-static const unsigned char B166[] = {0,14,129,82,160,115,0,185,0,14,129,82,160,111,0,185};
-static const unsigned char B167[] = {161,123,64,185,0,14,129,82,63,0,60,113,65,0,0,84};
-static const unsigned char B168[] = {64,5,128,82,160,59,0,185,191,63,0,185,10,0,0,20};
-static const unsigned char B169[] = {0,64,129,82,160,115,0,185,160,111,0,185,236,255,255,23};
-#define FX6_LABEL "fx6read_v1"
+static const unsigned char B154[] = {112,8,0,0};
+static const unsigned char B155[] = {0,10,0,0};
+static const unsigned char B156[] = {48,4};
+static const unsigned char B157[] = {0,5};
+static const unsigned char B158[] = {112,8};
+static const unsigned char B159[] = {0,10};
+static const unsigned char B160[] = {112,8};
+static const unsigned char B161[] = {0,10};
+static const unsigned char B162[] = {112,8,0,0};
+static const unsigned char B163[] = {0,10,0,0};
+static const unsigned char B164[] = {48,4};
+static const unsigned char B165[] = {0,5};
+static const unsigned char B166[] = {112,8};
+static const unsigned char B167[] = {0,10};
+static const unsigned char B168[] = {112,8};
+static const unsigned char B169[] = {0,10};
+static const unsigned char B170[] = {112,8,0,0};
+static const unsigned char B171[] = {0,10,0,0};
+static const unsigned char B172[] = {48,4};
+static const unsigned char B173[] = {0,5};
+static const unsigned char B174[] = {112,8};
+static const unsigned char B175[] = {0,10};
+static const unsigned char B176[] = {112,8};
+static const unsigned char B177[] = {0,10};
+static const unsigned char B178[] = {112,8,0,0};
+static const unsigned char B179[] = {0,10,0,0};
+static const unsigned char B180[] = {48,4};
+static const unsigned char B181[] = {0,5};
+static const unsigned char B182[] = {0,32,0,0,224,16,0,0,1,0,0,0};
+static const unsigned char B183[] = {0,15,0,0,0,10,0,0,16,0,0,0};
+static const unsigned char B184[] = {0,2,128,82};
+static const unsigned char B185[] = {96,0,128,82};
+static const unsigned char B186[] = {32,1,128,82};
+static const unsigned char B187[] = {64,0,128,82};
+static const unsigned char B188[] = {0,14,129,82,160,115,0,185,0,14,129,82,160,111,0,185};
+static const unsigned char B189[] = {161,123,64,185,0,14,129,82,63,0,60,113,65,0,0,84};
+static const unsigned char B190[] = {64,5,128,82,160,59,0,185,191,63,0,185,10,0,0,20};
+static const unsigned char B191[] = {0,64,129,82,160,115,0,185,160,111,0,185,236,255,255,23};
+#define FX6_LABEL "fx6read_v2"
 #define CP_LO 0xc0000U
 #define CP_HI 0x2200000U
 #define AVCAM_PHYS 0x401000000UL
@@ -220,71 +242,82 @@ static const struct cp_site cp_sites[] = {
     {"outsize", 0x1626bb4, 4, B44, B45, 1},
     {"outsize_guard0", 0x1626bac, 8, B46, 0, 1},
     {"outsize_guard1", 0x1626bb8, 4, B47, 0, 1},
-    {"screen0", 0x1db34c, 4, B48, B49, 1},
-    {"screen1", 0x1db350, 4, B50, B51, 1},
-    {"screen2", 0x1dbb44, 4, B52, B53, 1},
-    {"screen3", 0x60b354, 4, B54, B55, 1},
-    {"screen4", 0x60b358, 4, B56, B57, 1},
-    {"screen5", 0x60b35c, 4, B58, B59, 1},
-    {"screen6", 0x60b360, 4, B60, B61, 1},
-    {"screen7", 0x60cf40, 4, B62, B63, 1},
+    {"dmm0", 0x2141ca8, 4, B48, B49, 0},
+    {"dmm1", 0x2141cac, 4, B50, B51, 0},
+    {"dmm2", 0x2141d10, 4, B52, B53, 0},
+    {"dmm3", 0x2141d24, 4, B54, B55, 0},
+    {"dmm4", 0x2141d38, 4, B56, B57, 0},
+    {"dmm5", 0x2141d4c, 4, B58, B59, 0},
+    {"dmm6", 0x2141d60, 4, B60, B61, 0},
+    {"dmm7", 0x2141d74, 4, B62, B63, 0},
+    {"dmm8", 0x2141d88, 4, B64, B65, 0},
+    {"dmm9", 0x2141d98, 4, B66, B67, 0},
+    {"dmm10", 0x2141d9c, 4, B68, B69, 0},
+    {"screen0", 0x1db34c, 4, B70, B71, 1},
+    {"screen1", 0x1db350, 4, B72, B73, 1},
+    {"screen2", 0x1dbb44, 4, B74, B75, 1},
+    {"screen3", 0x60b354, 4, B76, B77, 1},
+    {"screen4", 0x60b358, 4, B78, B79, 1},
+    {"screen5", 0x60b35c, 4, B80, B81, 1},
+    {"screen6", 0x60b360, 4, B82, B83, 1},
+    {"screen7", 0x60cf40, 4, B84, B85, 1},
 };
 static const struct mp_site lm_sites[] = {
-    {0xcca01eUL, 2, B64, B65},
-    {0xcca0f6UL, 2, B66, B67},
-    {0x6131e0UL, 4, B162, B163},
-    {0x6131e8UL, 4, B164, B165},
-    {0x613388UL, 16, B166, B167},
-    {0x613398UL, 16, B168, B169},
+    {0xcca01eUL, 2, B86, B87},
+    {0xcca0f6UL, 2, B88, B89},
+    {0x6131e0UL, 4, B184, B185},
+    {0x6131e8UL, 4, B186, B187},
+    {0x613388UL, 16, B188, B189},
+    {0x613398UL, 16, B190, B191},
 };
 static const struct mp_site av_sites[] = {
-    {0x37824cUL, 2, B68, B69},
-    {0x38cd22UL, 2, B70, B71},
-    {0x38cd54UL, 4, B72, B73},
-    {0x378cfcUL, 2, B74, B75},
-    {0x38e022UL, 2, B76, B77},
-    {0x38e054UL, 4, B78, B79},
-    {0x37a01cUL, 2, B80, B81},
-    {0x390222UL, 2, B82, B83},
-    {0x390254UL, 4, B84, B85},
-    {0x390272UL, 2, B86, B87},
-    {0x37a0acUL, 2, B88, B89},
-    {0x390322UL, 2, B90, B91},
-    {0x390354UL, 4, B92, B93},
-    {0x390372UL, 2, B94, B95},
-    {0x37932cUL, 2, B96, B97},
-    {0x38eb22UL, 2, B98, B99},
-    {0x38eb54UL, 4, B100, B101},
-    {0x38eb72UL, 2, B102, B103},
-    {0x37995cUL, 2, B104, B105},
-    {0x38f622UL, 2, B106, B107},
-    {0x38f654UL, 4, B108, B109},
-    {0x38f672UL, 2, B110, B111},
-    {0x37b69cUL, 2, B112, B113},
-    {0x392a22UL, 2, B114, B115},
-    {0x392a54UL, 4, B116, B117},
-    {0x392a72UL, 2, B118, B119},
-    {0x37b96cUL, 2, B120, B121},
-    {0x392f22UL, 2, B122, B123},
-    {0x392f54UL, 4, B124, B125},
-    {0x392f72UL, 2, B126, B127},
-    {0x37b9fcUL, 2, B128, B129},
-    {0x393022UL, 2, B130, B131},
-    {0x393054UL, 4, B132, B133},
-    {0x393072UL, 2, B134, B135},
-    {0x37bc3cUL, 2, B136, B137},
-    {0x393422UL, 2, B138, B139},
-    {0x393454UL, 4, B140, B141},
-    {0x393472UL, 2, B142, B143},
-    {0x37bcccUL, 2, B144, B145},
-    {0x393522UL, 2, B146, B147},
-    {0x393554UL, 4, B148, B149},
-    {0x393572UL, 2, B150, B151},
-    {0x37c26cUL, 2, B152, B153},
-    {0x393f22UL, 2, B154, B155},
-    {0x393f54UL, 4, B156, B157},
-    {0x393f72UL, 2, B158, B159},
-    {0x37766cUL, 12, B160, B161},
+    {0x37824cUL, 2, B90, B91},
+    {0x38cd22UL, 2, B92, B93},
+    {0x38cd54UL, 4, B94, B95},
+    {0x378cfcUL, 2, B96, B97},
+    {0x38e022UL, 2, B98, B99},
+    {0x38e054UL, 4, B100, B101},
+    {0x37a01cUL, 2, B102, B103},
+    {0x390222UL, 2, B104, B105},
+    {0x390254UL, 4, B106, B107},
+    {0x390272UL, 2, B108, B109},
+    {0x37a0acUL, 2, B110, B111},
+    {0x390322UL, 2, B112, B113},
+    {0x390354UL, 4, B114, B115},
+    {0x390372UL, 2, B116, B117},
+    {0x37932cUL, 2, B118, B119},
+    {0x38eb22UL, 2, B120, B121},
+    {0x38eb54UL, 4, B122, B123},
+    {0x38eb72UL, 2, B124, B125},
+    {0x37995cUL, 2, B126, B127},
+    {0x38f622UL, 2, B128, B129},
+    {0x38f654UL, 4, B130, B131},
+    {0x38f672UL, 2, B132, B133},
+    {0x37b69cUL, 2, B134, B135},
+    {0x392a22UL, 2, B136, B137},
+    {0x392a54UL, 4, B138, B139},
+    {0x392a72UL, 2, B140, B141},
+    {0x37b96cUL, 2, B142, B143},
+    {0x392f22UL, 2, B144, B145},
+    {0x392f54UL, 4, B146, B147},
+    {0x392f72UL, 2, B148, B149},
+    {0x37b9fcUL, 2, B150, B151},
+    {0x393022UL, 2, B152, B153},
+    {0x393054UL, 4, B154, B155},
+    {0x393072UL, 2, B156, B157},
+    {0x37bc3cUL, 2, B158, B159},
+    {0x393422UL, 2, B160, B161},
+    {0x393454UL, 4, B162, B163},
+    {0x393472UL, 2, B164, B165},
+    {0x37bcccUL, 2, B166, B167},
+    {0x393522UL, 2, B168, B169},
+    {0x393554UL, 4, B170, B171},
+    {0x393572UL, 2, B172, B173},
+    {0x37c26cUL, 2, B174, B175},
+    {0x393f22UL, 2, B176, B177},
+    {0x393f54UL, 4, B178, B179},
+    {0x393f72UL, 2, B180, B181},
+    {0x37766cUL, 12, B182, B183},
 };
 static const struct av_guard av_guards[] = {
     {"unit_rows_0_6", 0x37815cUL, 112, {15,0,156,237,135,149,46,207,200,80,74,221,223,251,35,38,76,75,12,159,234,89,123,122,192,167,45,224,229,252,8,153}},
@@ -311,5 +344,6 @@ static const struct dump_range dump_ranges[] = {
     {"paneltype", 0x1703000, 1},
     {"desqueeze", 0x12c0000, 1},
     {"panelcode", 0xce4000, 1},
+    {"dmmcfg", 0x213e000, 7},
 };
 #endif

@@ -15,7 +15,12 @@ Cases, coprocessor (sensor sites + stored record; output-size word):
 Cases, main processor (encoder sites): apply, apply again, put back; a guard wrong; a lost write in libmpr.so; the kernel's view not
 following a write; the step without the header heights (N19) and L19 / L20 over it.
 The LCD libraries (S16/S17 = levels 16/17 with the screen design's words) run in the same harness, on the words of the loaded image.
-Safety cases: the FX3 kit's and the A7S III kit's own write libraries (levels 5, 16 with their screen words, and 19) on an FX6 write nothing.
+The output-plane memory libraries (D16 / R16 = level 16 with the words of dmm7slot_fx6_v1 / _v2, D17 = level 17 with the words of both;
+added after the testers' first runs) run on a model whose RAM holds the camera's copy of DmmCfg.bin's unit records (rebuilt from the file by
+build/build_dmm_fx6.py; a tester's dump equals it): apply, apply again, put back; each guard wrong; the table one record further on; no
+table; a word holding another size; lost writes; one variant on a camera holding the other (refused); D17 on a stock camera.
+Safety cases: the FX3 kit's and the A7S III kit's own write libraries (levels 5, 16 with their screen words, and 19) on an FX6 write nothing,
+and neither do the ZV-E1 and FX2 kits' memory libraries (level 13).
 """
 import json
 import struct
@@ -401,6 +406,96 @@ def main():
             r, t = go_s("S16", mem, lose=lose)
             ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and lf_state(mem) == "stock" and image_but(mem, ()),
                "S16 with line write %d lost: reported, and every word put back" % lose)
+
+    # ---- the output-plane memory step: words of the camera's run-time copy of DmmCfg.bin, beyond the image (D16, R16; D17 puts back either)
+    if KIT.get("dmm"):
+        named = lambda n: (HERE / f"libJit_fx6_{n}.so").read_bytes()
+        sys.path.insert(0, str(ROOT / "build"))
+        import build_dmm_fx6 as B
+        cfg = B.P.Config(B.P.find_file("fx6_602"), "fx6_602")
+        tbase, table, _ = B.ram_table(cfg)
+        d1, d2, db = design(KIT["dmm"]), design(KIT["dmm_alt"]), design(KIT["dmm_back"])
+        dm_allowed = {int(s["ram_address"], 16) + k: (o, n) for s in db["sites"] for k, (o, n) in enumerate(zip(bytes.fromhex(s["old"]), bytes.fromhex(s["new"])))}
+
+        def cam(at=tbase, data=table):
+            m = Mem(image)
+            if data:
+                m.write(at, data)
+            return m
+
+        def go_d(n, mem, **kw):
+            r = Run(named(n), files, dirs, mem, dm_allowed, **kw).go()
+            return r, r.writes.get(RESULT, b"").decode("utf8", "replace")
+
+        def want(d):
+            t = bytearray(table)
+            for s in (d["sites"] if d else ()):
+                a = int(s["ram_address"], 16) - tbase
+                assert t[a:a + 4] == bytes.fromhex(s["old"])
+                t[a:a + 4] = bytes.fromhex(s["new"])
+            return bytes(t)
+
+        def holds(mem, d):
+            """The table is the file's with exactly this design's words changed (None: stock), and every other byte of memory is untouched."""
+            ref = cam(data=want(d))
+            return all(bytes(p) == bytes(ref.page(a)) for a, p in mem.pages.items())
+
+        for step, d in (("D16", d1), ("R16", d2)):
+            mem = cam()
+            r, t = go_d(step, mem)
+            ok(not r.bad and "DONE: every site holds the target bytes (apply)" in t and holds(mem, d) and r.n_writes == len(d["sites"]),
+               "%s on the stock table: its %d words are new, every other byte is as before (%d line writes)" % (step, len(d["sites"]), r.n_writes))
+            r, t = go_d(step, mem)
+            ok(not r.bad and "NOTHING TO DO" in t and r.n_writes == 0, "%s again: nothing to do, no write" % step)
+            r, t = go_d("D17", mem)
+            ok(not r.bad and "(put back)" in t and "DONE" in t and holds(mem, None), "D17 on a camera holding %s: the file's table again, byte for byte" % d["design"])
+            for g in d["guards"]:
+                mem = cam()
+                ga = int(g["ram_address"], 16)
+                mem.write(ga, bytes([mem.read(ga, 1)[0] ^ 1]))
+                r, t = go_d(step, mem)
+                if r.bad or r.n_writes or "are not as expected; nothing is written" not in t:
+                    ok(False, "%s with the guard at %#x wrong: nothing is written" % (step, ga))
+                    break
+            else:
+                ok(True, "%s with any one of the %d guards wrong: nothing is written" % (step, len(d["guards"])))
+            mem = cam(at=tbase + 0x14)
+            r, t = go_d(step, mem)
+            ok(not r.bad and r.n_writes == 0 and "nothing is written" in t, "%s with the table one record further on: nothing is written" % step)
+            mem = cam(data=b"")
+            r, t = go_d(step, mem)
+            ok(not r.bad and r.n_writes == 0 and "nothing is written" in t, "%s with no table there (zeros): nothing is written" % step)
+            mem = cam()
+            mem.write(int(d["sites"][3]["ram_address"], 16), struct.pack("<I", 12_288_000))
+            r, t = go_d(step, mem)
+            ok(not r.bad and r.n_writes == 0 and "holds neither the earlier nor the new bytes; nothing is written" in t, "%s with one word holding another size: nothing is written" % step)
+            for lose in sorted({1, 2, len(d["sites"]) // 2, len(d["sites"])}):
+                mem = cam()
+                r, t = go_d(step, mem, lose=lose)
+                ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and holds(mem, None),
+                   "%s with line write %d lost: reported, and every word put back" % (step, lose))
+        mem = cam()
+        r, t = go_d("D17", mem)
+        ok(not r.bad and "NOTHING TO DO" in t and r.n_writes == 0, "D17 on a stock camera: nothing to do, no write")
+        for first, second in (("D16", "R16"), ("R16", "D16")):
+            mem = cam()
+            go_d(first, mem)
+            held = d1 if first == "D16" else d2
+            r, t = go_d(second, mem)
+            ok(not r.bad and r.n_writes == 0 and "nothing is written" in t and holds(mem, held), "%s on a camera holding %s's words: nothing is written (put back first)" % (second, first))
+        mem = cam(data=want(d1))
+        r, t = go_d("D17", mem, lose=3)
+        ok(not r.bad and "NOT DONE: a step failed; every site this run touched was put back" in t and holds(mem, d1),
+           "D17 with line write 3 lost: reported, and the camera holds dmm7slot_fx6_v1 again")
+        # the other kits' memory libraries (level 13: the raw write buffer of another body's table) on an FX6
+        for kit, path in (("ZV-E1", HERE.parent / "helper_zv/libJit_zv_L13.so"), ("FX2", HERE.parent / "helper_fx2/libJit_fx2_L13.so")):
+            if not path.is_file():
+                print(f"NOTE  {path.name} is not here: the {kit} memory-step safety case was skipped")
+                continue
+            mem = cam()
+            r = Run(path.read_bytes(), files, dirs, mem, {}).go()
+            t = r.writes.get(RESULT, b"").decode("utf8", "replace")
+            ok(r.n_writes == 0 and holds(mem, None) and ("nothing is written" in t or bool(r.bad)), "the %s kit's memory step (L13) on an FX6: nothing is written" % kit)
 
     # ---- safety: the FX3 kit's and the A7S III kit's write libraries on an FX6 write nothing (an FX6 owner might run one of those kits; their apply
     # also needs a READY check of their own kit, which an FX6 never gives: helper_fx6/emu_fx6.py). Any write the model sees fails the case.

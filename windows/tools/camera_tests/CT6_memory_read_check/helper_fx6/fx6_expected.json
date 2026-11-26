@@ -1,5 +1,5 @@
 {
- "label": "fx6read_v1",
+ "label": "fx6read_v2",
  "cp_lo": 786432,
  "cp_hi": 35651584,
  "avcam_phys": 17196646400,
@@ -167,6 +167,72 @@
    "soft": 1
   },
   {
+   "name": "dmm0",
+   "address": "0x2141ca8",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm1",
+   "address": "0x2141cac",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm2",
+   "address": "0x2141d10",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm3",
+   "address": "0x2141d24",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm4",
+   "address": "0x2141d38",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm5",
+   "address": "0x2141d4c",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm6",
+   "address": "0x2141d60",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm7",
+   "address": "0x2141d74",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm8",
+   "address": "0x2141d88",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm9",
+   "address": "0x2141d98",
+   "length": 4,
+   "soft": 0
+  },
+  {
+   "name": "dmm10",
+   "address": "0x2141d9c",
+   "length": 4,
+   "soft": 0
+  },
+  {
    "name": "screen0",
    "address": "0x1db34c",
    "length": 4,
@@ -302,12 +368,20 @@
    "panelcode",
    "0xce4000",
    1
+  ],
+  [
+   "dmmcfg",
+   "0x213e000",
+   7
   ]
  ],
  "designs": {
   "ogsq_fx6_v1": "813409ec7bc372333317fb0b549da23d2fb7f99b9ebeb22cdf268179dc01d79f",
   "outsz2560_fx6_v1": "2300c6cfcb02c35937ea0f4d9ee2738d39f9c4201ab85cb02889cc786c430cc3",
   "ogfile2560_xavc_fx6_v2": "2973c644eb0fd2ebb14cf57014888a803739b8b856bcf58f73a46ec9013817fc",
-  "lcd32_fx6_v1": "55b9995533f3c08c295eb82ec070822ebd33de384175c77aae3c1139759b4546"
+  "lcd32_fx6_v1": "55b9995533f3c08c295eb82ec070822ebd33de384175c77aae3c1139759b4546",
+  "dmm7slot_fx6_v1": "d052e25f735851256c25eb1566b96fb8a6186bd99105916434e61aa4a24be94b",
+  "dmm7slot_fx6_v2": "72cadf87a4dc1358186df4d202fd495ba410f9ea94ae15f93d05069bcdae2da6",
+  "dmm7slot_fx6_back": "52b6a730dfd98cf95fa6861d87529c42995d04ed8369ec9189db060ce9304100"
  }
 }

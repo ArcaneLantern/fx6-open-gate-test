@@ -31,7 +31,11 @@ CONSTS = {"a7iv_602": (0x4293C8, 874, 0x143C734, 0x50), "a7s3_501": (0x40AF34, 9
           # A1 II 4.00 (2026-11-26, A1 II port): the FX2's 0x4ff894 at 0x501834 (match_seed 64 votes; diff_consts 305 of 342 aligned: relocated
           # targets, base 0x18f6028 -> 0x1938404, settings block 0x196aa58 -> 0x19acc14, every field from +0x88 on 4 bytes lower), 0x412 bytes to
           # its pop at 0x501c44. Table at base + 0x84 (modding/A1M2_PORT_DMM_SIZE.md).
-          "a1m2_400": (0x501834, 0x412, 0x1938404, 0x84)}
+          "a1m2_400": (0x501834, 0x412, 0x1938404, 0x84),
+          # A6700 2.00 (2026-11-26, A6700 port): the ZV-E1's 0x4aadd8 (= A7C II 0x4b7354) at 0x4ab69c (match_thumb exact from both;
+          # diff_consts 289 of 295 aligned: relocated targets and the base 0x19964c4 -> 0x199ec2c), the same 922 bytes to its pop at 0x4aba34.
+          # Table at base + 0x50 = 0x199ec7c (modding/A6700_PORT_DMM_SIZE.md).
+          "a6700_200": (0x4AB69C, 922, 0x199EC2C, 0x50)}
 
 
 def table(build):

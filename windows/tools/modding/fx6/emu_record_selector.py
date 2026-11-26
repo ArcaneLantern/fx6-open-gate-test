@@ -32,6 +32,9 @@ CONSTS = {"a7s3_501": {"selector": 0x256128, "ids": 0xC70624, "modes": 40},
           # FX30 6.01 (2026-11-26, FX30 port): its own compare chain at 0x73ccde (found by the MOVW/MOVT loads of its record addresses);
           # the same key struct. Modes 0x820, 0x880, 0x890, 0x8c0, 0x8d0 all get the pair 0xc79440 / 0xc79ff8
           "fx30_601": {"selector": 0x73CCDE, "ids": 0xD10D68, "modes": 31},
+          # A6700 2.00 (2026-11-26, A6700 port): the FX30's compare chain 0x73ccde at 0x7938f4 (match_thumb, single exact masked hit); the same
+          # 31 mode ids. Modes 0x820, 0x880, 0x890, 0x8c0, 0x8d0 all get the pair 0xd3885c / 0xd39414, mode 0x830 the pair 0xd39fcc / 0xd3ab84
+          "a6700_200": {"selector": 0x7938F4, "ids": 0xDC7B5C, "modes": 31},
           # A1 II 4.00 (2026-11-26, A1 II port): compare chain at 0x279f20 (found by the MOVW/MOVT loads of its record addresses, e.g.
           # 0xdf6844 at 0x27a0b0); the same key struct
           "a1m2_400": {"selector": 0x279F20, "ids": 0xE9EB40, "modes": 44},

@@ -1,8 +1,26 @@
 # Port notes: FX3 7.02 kit → FX6 6.02
 
-Everything here was read from the FX6 6.02 firmware update (`BODYDATA.DAT`, SHA-256 `dbb814d5…c339`). Every step was emulated: Unicorn ran the FX6's own code where it mattered, and the built helper libraries ran against a model FX6. The reference is the FX3 kit, which works on two FX3s (2026-11-24: true 3840 × 2560 in XAVC HS 4K and XAVC S 4K at 23.98p, the whole sensor area, the rear screen at 3:2). **Nothing here has run on an FX6.**
+Everything here was read from the FX6 6.02 firmware update (`BODYDATA.DAT`, SHA-256 `dbb814d5…c339`). Every step was emulated: Unicorn ran the FX6's own code where it mattered, and the built helper libraries ran against a model FX6. The reference is the FX3 kit, which works on two FX3s (2026-11-24: true 3840 × 2560 in XAVC HS 4K and XAVC S 4K at 23.98p, the whole sensor area, the rear screen at 3:2). **Two FX6s have now run the steps** (issues 1 and 2); what they showed is in the next section.
 
-Observed = read in the firmware or seen in emulation. Inferred = a reading of what was observed, not shown on a camera.
+Observed = read in the firmware or seen in emulation. Inferred = a reading of what was observed, not shown on a camera. "On a camera" = seen by a tester.
+
+## What the first FX6 runs showed (2026-11-25 and 26)
+
+| | Tester 1 (issue 1, macOS, XAVC-L 4:2:0 8-bit) | Tester 2 (issue 2, XAVC-I) |
+|---|---|---|
+| Sensor step alone | works: sensor on register column 1, drive mode 0x8c0, a clip is written (full height squeezed into 3840 × 2160, with a black band of about 210 rows at the top) | picture black, `E95-311`, beeps, blinking lamp; the picture came back after the next step |
+| + output size, no memory step | no clip written; USB and thumbnail mode locked until a battery pull | a 3840 × 2560 clip whose rows 2304–2559 repeat rows 0–255 |
+| + the memory step (first) | not run | **clean 3840 × 2560, 23.98p, every row real picture; MXF header 3840 × 2560, 3:2** |
+| LCD step | rapid left-right jitter | the picture split into three horizontal sections |
+
+What follows from them:
+
+- **The missing piece was memory** (next section). The first kit never checked the output buffers' size for the FX6, because the FX3 kit has no such step.
+- **The first kit's order was wrong for the FX6.** It put the output size in second, before the encoder step and with buffers too small for it. The order is now memory, sensor, encoder, output size, which is the order that ran in issue 2 (there with the LCD step before the output size).
+- **The MXF header fix works** on a real clip: StoredHeight / SampledHeight / DisplayHeight 2560, AspectRatio 3/2 (read from tester 2's file).
+- **The LCD step does not work** on the FX6 as built. It is now only applied on request.
+- **E95-311 is not explained.** Sony's E95 class is an operation fault of a processor or bus. The firmware only formats the code (`E%02X-%03X`, appFw's caution module); what raises 95/311 was not found. It appeared for tester 2 (XAVC-I, memory step applied before) and not for tester 1 (XAVC-L, no memory step). Either difference could be the cause. The memory step is a candidate: see "one refused request" below.
+- The black band tester 1 saw with the sensor step alone is not explained either. Tester 2's final clips have real picture from the first row.
 
 ## The USB route (observed)
 
@@ -37,6 +55,42 @@ The FX6 6.02 coprocessor program (`cpapp-b.bin`, 17.9 MB) is a different, larger
 | register matrix; shadow | 0xf09f84 (489 rows); 0xff4bf0 | 0x10ea3a8 (496 rows); 0x11d68b4 |
 | table map; calculator; selector; size set-up | 0x857e5c; 0x331538; 0x2514b8; 0x4008ec | 0x85d36c; 0x3394ac; 0x261d10; 0x40793c |
 
+## The memory step (first): `dmm7slot_fx6_v1`, and the variant `dmm7slot_fx6_v2`
+
+**Found, built and first run by the tester of issue 2 (Mininoob).** What is here was rebuilt from the firmware's file and checked against that tester's two dumps (`tools/modding/fx6/build_dmm_fx6.py`).
+
+**The cause (observed).**
+
+- The output pictures live in units of memory id 0x2d9, DmmCfg key 0x3f1: 13,271,040 bytes each. The A7 IV, A7S III, FX3, FX2 and FX30 have the same units.
+- The FX6 fills them at 1.5 bytes per pixel (on a camera: the repeat starts at row 2304 = 13,271,040 / (3840 × 1.5)). 3840 × 2560 then needs 14,745,600 bytes. The other bodies record 3840 × 2560 in the same units, at 1.25 bytes per pixel (12,288,000).
+- The table is the camera's run-time copy of `/cp/DmmCfg.bin`: unit records at 0x213ef64, one 20-byte record `{0, type, key, size, attributes}` per unit, in file order. Tester 2's stock dump equals the file in all 1,147 records, so the addresses are the firmware's, not one camera's.
+- Two layouts of the 106,954,752-byte parent block (key 0x39, three blocks) offer the unit: layout 0x26 (28 units of 3,317,760 bytes + one output unit; may be made once) and layout 0x28 (eight output units; may be made twice). Stock: 17 output units.
+
+**The tester's ten words (`_v1`, on a camera).**
+
+| Words | Change |
+|---|---|
+| 0x2141d10 … 0x2141d88 (seven) | layout 0x28, units 1–7: size 13,271,040 → 14,745,600 |
+| 0x2141d98, 0x2141d9c | layout 0x28, unit 8: key 0x3f1 → 0x7fd (a key nothing asks for), size → 4,096 |
+| 0x2141cac | layout 0x26, its output unit: size → 14,745,600 |
+
+Layout 0x28 then totals 103,223,296 bytes and fits. Layout 0x26 totals 107,642,880: 688,128 bytes over the block.
+
+**The FX6's own memory manager, emulated** (its code run alone on the file's table; `emu_dmm_server.py`, `dmm7slot_fx6_emu.json`):
+
+| Table | What requests for an output unit get |
+|---|---|
+| stock | 17 units of 13,271,040; the first comes from layout 0x26 |
+| the ten words | after a full release: **one refused request** (layout 0x26 is tried first and no longer fits), then 14 units of 14,745,600. No small unit is ever handed out |
+| the nine words of layout 0x28 alone | the 13,271,040-byte unit of layout 0x26 is handed out first, among the big ones. Not shipped: one picture per cycle would overrun |
+| `_v2`: the nine words + layout 0x26's unit retagged (0x2141ca8: key 0x3f1 → 0x7fd) | 14 units of 14,745,600, **no refusal**, no layout over its block |
+
+So the tenth word is what keeps a small unit out of the pool, at the price of a refusal. The tester's camera ran with it. Whether that refusal is what shows as E95-311 after the sensor step is not known; `_v2` is offered as a test for exactly that (`open_gate_apply_alt_memory.cmd`). **`_v2` has not run on a camera.**
+
+**How it is written.** The other kits' memory level refuses to write while the units are in use, which on an FX6 is always (no stills mode). So this step uses the word-writing level the output size and LCD steps use (16/17), as the tester did: D16 (`_v1`), R16 (`_v2`), and one put back D17 that holds the words of both. 23 guards from the file: the rest of every touched record, the end markers around layout 0x28, and the three parent records. On the tester's camera the words counted from the picture restart at the end of the USB session.
+
+**While applied:** 14 output units instead of 17. Only QFHD has been run. With `_v1` a mode that needs layout 0x26 afresh is refused (the tester expects `EA0-000` there).
+
 ## Step 1, sensor: `ogsq_fx6_v1` (the FX3's `ogsq_fx3_v1`)
 
 Rebuilt on the FX6's own image, not copied (`tools/modding/fx6/build_og_fx6.py`). Every check passes:
@@ -51,6 +105,8 @@ Rebuilt on the FX6's own image, not copied (`tools/modding/fx6/build_og_fx6.py`)
 ## Step 2, size: `outsz2560_fx6_v1` (the FX3's `outsz2560_fx3_v1`)
 
 The FX6's size-table set-up, emulated, fills the FX3's 16 entries. One word, 0x1626bb4: 3840 × 2160 → 3840 × 2560, with the FX3's two guards.
+
+**On a camera:** the word is right, but it must come last. Alone, or before the memory step, it makes the camera write 2560 rows into units that hold 2304 (see "What the first FX6 runs showed"). It is now the apply's last open-gate step.
 
 ## Which video mode the FX6 records QFHD 23.98p in (not settled)
 
@@ -122,20 +178,27 @@ Not changed: Sony's XML (NonRealTimeMeta, inside the file and the M01.XML sideca
 
 **Side effects while applied (emulated):** a DCI 17:9 picture fills the LCD (6% too tall); the de-squeeze shapes are the 3:2 picture's on every output that de-squeezes (the calculator is shared); an HDMI/SDI output set to a 4096-wide resolution pillarboxes a 16:9 picture at 3:2.
 
-**Not known:** the LCD's panel-type byte on a real FX6 (expected 1 = 16:9 from Sony's 2.76M-dot spec; the dump reads it), that the LCD is the firmware's device 1, that the menu's 1.3x / 2.0x send codes 1 / 4, and how the FX6 draws focus frames and markers (it has none of the FX3's frame tables; a plane laid out for the 16:9 frame could be off by up to 100 px at the edges).
+**On a camera: it does not work.** Both testers' dumps show panel type 1 (16:9), and tester 1's dump after the step shows the eight words as designed. Both saw a broken preview: rapid left-right jitter (tester 1, in the state without the memory step) and the picture in three horizontal sections (tester 2, while recording correctly). Without the step the preview is stable. The recording is not affected. The emulation covers the layout function's rectangle, not what the display hardware does with it. The stock FX6 never shows a picture narrower than its LCD (a 16:9 picture on a 4:3 output is letterboxed, full width), so the pillarbox path may simply not be supported by the LCD's drive. Not settled: no dump of the final state with the step in exists yet. The step is applied only by `open_gate_apply_with_screen.cmd`.
+
+**Not known:** that the LCD is the firmware's device 1, that the menu's 1.3x / 2.0x send codes 1 / 4, and how the FX6 draws focus frames and markers (it has none of the FX3's frame tables; a plane laid out for the 16:9 frame could be off by up to 100 px at the edges).
 
 ## The kit
 
-- **Read-only helper** (`helper_fx6/fx6read.c`, made from fx3read.c by text changes): identity, every site's state, and in the dump build the debug pages: the sensor register shadow and matrix, the stored records, the size table, the coprocessor's own logs, the scaler state (ported from the FX3 dump's addresses), the camera core's last log record (the drive mode it ran before the session), and the LCD pages (panel type bytes, the ratio and de-squeeze words, the de-squeeze scale).
-- **Write libraries:** the A7 IV helper's levels 5/6, 16/17 and 19/20 (`helper/readcheck.c`, unchanged), with the FX6's tables.
+- **Read-only helper** (`helper_fx6/fx6read.c`, made from fx3read.c by text changes): identity, every site's state, and in the dump build the debug pages: the sensor register shadow and matrix, the stored records, the size table, the coprocessor's own logs, the scaler state (ported from the FX3 dump's addresses), the camera core's last log record (the drive mode it ran before the session), and the LCD pages (panel type bytes, the ratio and de-squeeze words, the de-squeeze scale). Since the second kit (`fx6read_v2`): the eleven memory words, the memory table's pages (the report lists both layouts and whether each fits), and the files of `/log/cp`.
+- **Write libraries:** the A7 IV helper's levels 5/6, 16/17 and 19/20 (`helper/readcheck.c`, unchanged), with the FX6's tables. The libraries of the first kit are byte for byte the same in the second; D16, R16 and D17 are new.
 - **Emulation of the libraries** (`helper_fx6/emu_fx6.py`, `emu_fx6_write.py`): apply, apply again, put back byte for byte, foreign bytes, lost writes undone, every guard; the read-only libraries refuse an FX3 or A7S III image; the FX3, A7S III and ZV-E1 kits' check libraries say NOT READY on an FX6, and the FX3 and A7S III kits' write libraries write nothing on an FX6.
 - **Scripts:** `fx6_run.py` / `fx6_apply.py` (from the FX3's). The FX6 has no stills mode: each step writes during a USB session, while the picture is stopped (on the A7S III and FX3 the sensor sleeps during a session and the picture is started afresh after it). The apply ends with the debug dump after an unplug and replug.
 
 ## Not known yet
 
-- Everything on an FX6.
-- That the FX6 runs QFHD 23.98p FF in drive mode 0x8c0 (see above).
-- That the picture restarts with the patch after the last USB session (it does on the A7S III and FX3).
+- What raises E95-311 after the sensor step, and whether the memory variant avoids it.
+- Why the LCD step breaks the preview, and how to show 3:2 on the FX6's LCD.
+- XAVC-L with the memory step (14 output units instead of 17; long-GOP may want more than intra does).
+- The apply's exact order without the LCD step (the run in issue 2 had the LCD step between the encoder and the output size).
+- Why the sensor step alone gave tester 1 a black band at the top of the squeezed picture.
 - Whether the power switch removes the patch (it does on the A7S III).
+- HD, DCI 4K and S&Q while the memory step is applied.
+
+Settled by the testers: the FX6 runs QFHD 23.98p FF in drive mode 0x8c0; the LCD's panel type is 1; the picture restarts with the patch after a USB session; the MXF muxer accepts 2560 rows.
 - Exposure, autofocus, Cine EI, S-Log3, long recordings, card speeds, SDI/HDMI output in the open-gate state.
 - In-camera playback of the clips (it fails on the FX3; not traced for the FX6's MXF playback).

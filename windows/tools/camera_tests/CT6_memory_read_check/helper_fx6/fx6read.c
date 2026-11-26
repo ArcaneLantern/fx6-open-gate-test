@@ -473,6 +473,7 @@ static void run(void)
 #if DUMP
     copy_dir("/sys/module/liro/parameters", 256);
     copy_dir("/log", 2048);
+    copy_dir("/log/cp", 8192);             /* v2: the coprocessor's log files (a folder of /log, which the line above does not descend into) */
 #endif
     file_identity();
     cp_part();

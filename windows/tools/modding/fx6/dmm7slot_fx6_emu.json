@@ -1,0 +1,158 @@
+{
+ "build": "fx6_602",
+ "dmmcfg_sha256": "1e71bb9dcf7bcafe8df52b07b4ecc03ef8001c79b8b25ea92a870f4c2f839bf8",
+ "generated_by": "build/build_dmm_fx6.py",
+ "memory_id": "0x2d9",
+ "key": "0x3f1",
+ "allocator": "cpapp-b.bin's own DMM module run alone (build/emu_dmm_server.py, fx6_602): one CPU, requests made as plain calls, no other user of the parent block",
+ "tester_dumps": {
+  "dumps_present": true,
+  "records_equal_to_the_file": 1147,
+  "table_span": [
+   "0x213ef64",
+   "0x2144900"
+  ],
+  "words_that_differ_between_the_dumps": [
+   "0x2141cac",
+   "0x2141d10",
+   "0x2141d24",
+   "0x2141d38",
+   "0x2141d4c",
+   "0x2141d60",
+   "0x2141d74",
+   "0x2141d88",
+   "0x2141d98",
+   "0x2141d9c"
+  ],
+  "stock_dump_sha256": "1bd2574ad28b29ed045a1675902701c605b5d5a956d6ceb51ba3874edac173de",
+  "applied_dump_sha256": "0451434a5b3de6b166e39b7846be8b4b3f84bf6570f32995e260db6e6e0f521a"
+ },
+ "layouts": {
+  "dmm7slot_fx6_v1": {
+   "0x26": {
+    "total": 107642880,
+    "parent": 106954752,
+    "spare": -688128
+   },
+   "0x28": {
+    "total": 103223296,
+    "parent": 106954752,
+    "spare": 3731456
+   }
+  },
+  "dmm7slot_fx6_v2": {
+   "0x26": {
+    "total": 106168320,
+    "parent": 106954752,
+    "spare": 786432
+   },
+   "0x28": {
+    "total": 103223296,
+    "parent": 106954752,
+    "spare": 3731456
+   }
+  }
+ },
+ "requests_for_an_output_plane": {
+  "stock": {
+   "nothing open when written": [
+    "17 x 13,271,040",
+    "3 x no group offers the key now"
+   ],
+   "9 planes open when written, all released, then asked again": [
+    "17 x 13,271,040",
+    "3 x no group offers the key now"
+   ],
+   "17 planes open when written, all released, then asked again": [
+    "17 x 13,271,040",
+    "3 x no group offers the key now"
+   ],
+   "9 planes open when written, all but the first (the HD layout's) released, then asked again": [
+    "16 x 13,271,040",
+    "4 x no group offers the key now"
+   ],
+   "9 planes open when written, more asked without a release": [
+    "8 x 13,271,040",
+    "12 x no group offers the key now"
+   ]
+  },
+  "dmm7slot_fx6_v1": {
+   "nothing open when written": [
+    "1 x refused",
+    "14 x 14,745,600",
+    "5 x no group offers the key now"
+   ],
+   "9 planes open when written, all released, then asked again": [
+    "1 x refused",
+    "14 x 14,745,600",
+    "5 x no group offers the key now"
+   ],
+   "17 planes open when written, all released, then asked again": [
+    "1 x refused",
+    "14 x 14,745,600",
+    "5 x no group offers the key now"
+   ],
+   "9 planes open when written, all but the first (the HD layout's) released, then asked again": [
+    "14 x 14,745,600",
+    "6 x no group offers the key now"
+   ],
+   "9 planes open when written, more asked without a release": [
+    "7 x 14,745,600",
+    "13 x no group offers the key now"
+   ]
+  },
+  "dmm7slot_fx6_v2": {
+   "nothing open when written": [
+    "14 x 14,745,600",
+    "6 x no group offers the key now"
+   ],
+   "9 planes open when written, all released, then asked again": [
+    "14 x 14,745,600",
+    "6 x no group offers the key now"
+   ],
+   "17 planes open when written, all released, then asked again": [
+    "14 x 14,745,600",
+    "6 x no group offers the key now"
+   ],
+   "9 planes open when written, all but the first (the HD layout's) released, then asked again": [
+    "14 x 14,745,600",
+    "6 x no group offers the key now"
+   ],
+   "9 planes open when written, more asked without a release": [
+    "7 x 14,745,600",
+    "13 x no group offers the key now"
+   ]
+  },
+  "the 4K layout's nine words alone (not shipped)": {
+   "nothing open when written": [
+    "1 x 13,271,040",
+    "14 x 14,745,600",
+    "5 x no group offers the key now"
+   ],
+   "9 planes open when written, all released, then asked again": [
+    "1 x 13,271,040",
+    "14 x 14,745,600",
+    "5 x no group offers the key now"
+   ],
+   "17 planes open when written, all released, then asked again": [
+    "1 x 13,271,040",
+    "14 x 14,745,600",
+    "5 x no group offers the key now"
+   ],
+   "9 planes open when written, all but the first (the HD layout's) released, then asked again": [
+    "14 x 14,745,600",
+    "6 x no group offers the key now"
+   ],
+   "9 planes open when written, more asked without a release": [
+    "7 x 14,745,600",
+    "13 x no group offers the key now"
+   ]
+  }
+ },
+ "reading": [
+  "stock: 17 planes of 13,271,040; the first comes from the HD layout 0x26 (file order), then two 4K layouts of eight",
+  "v1: after a full release the first request is refused (layout 0x26 no longer fits); every later one gets 14,745,600; 14 planes",
+  "v2: no refusal; 14 planes of 14,745,600",
+  "the nine words alone: the HD layout's 13,271,040-byte plane is handed out first, among the big ones"
+ ]
+}
