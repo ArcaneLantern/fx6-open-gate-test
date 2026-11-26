@@ -21,6 +21,11 @@ or --level 3 for the level 3 build (level 1 plus twelve read-only transfers from
 --level 9 is read-only and touches the main processor only: the first 2 KB of each file in /log and the 256 KB kernel log buffer.
 --level 31 is read-only and touches the main processor only: fixed spans of DRAM named by --design (cddump_si_v1: the encoder's picture
 buffers after an XAVC S-I HD recording), each span saved on its own as span_<n>_<block>_<address>.bin.
+--level 32 WRITES DRAM on the main processor: the hand-off fixture of --design (fixture_si_v1) into picture slot 0 of the S-I HD mode-2 buffer,
+only if slot 1 already holds the front end's picture (vcd12_ho5_v1/ho2_v1 in force and the S-I HD channel run once). Nothing else is written.
+--level 33 is read-only: 16 transfers from coprocessor memory, the tone-curve state (the picture-quality module's variables with the computed
+curves of its four contexts, the curve pointer table, the S-Log2 and S-Log3 source tables, the settings block; F1043, modding/TONE12_TEST.md).
+build/tone_state.py decodes it: which source table each computed curve equals, and whether the tables in memory are the firmware file's.
 --level 10 is read-only: 64 transfers from coprocessor memory, its kprint log (0xe0000, 128 KB, kept across a restart without power loss)
 and its boot-time log (0xc0000, 128 KB), saved as cp_kprint.bin and cp_boottime.bin in the private session folder.
 --level 12 is read-only: about 90 transfers from coprocessor memory, the state of its memory manager (reference/dmm_memory_manager.md): the page of
@@ -106,6 +111,9 @@ LIBS = {1: ("libJit_level1.so", "70b2695e917a19e05ca15f674f1260dab6e19f479bb963a
         # level 28 is read-only: the frame widgets' state (the model rings cpActAfWindow and cpActTrackingFrame read, their rectangle tables, the
         # display's fit-word page; F966, F967; level 15's code, its own ranges; build/frame_state.py decodes it)
         28: ("libJit_level28.so", "d0b0735cd888df6ca0766732b620ca6d884b93486de96842854e67d509eecdcd"),
+        # level 33 is read-only: the tone-curve state (the picture-quality module's variables with the four computed curves, the curve pointer
+        # table, the S-Log source tables, the settings block; F1043; level 15's code, its own ranges; build/tone_state.py decodes it)
+        33: ("libJit_level33.so", "c2b67fa33bc1fdf5e5e56926c5f1b61381711acba24a643a9f6c88754a2af865"),
         # level 22 is read-only, main processor only: the VCD codec's clock word, its window registers and its program area (stage V2)
         22: ("libJit_level22.so", "ae7c5d2018a500ffbc1b157ecba8a6070d0ecb0f2a285d811f6b8bb29091c10d"),
         # level 26 is read-only, main processor only: the VCD program area as plain memory (F780), before any code of ours runs there
@@ -296,7 +304,13 @@ DESIGN_LIBS = {"fhband_v1": {5: ("libJit_level5_fhband_v1.so", "982d2ea9d8916246
                "lcdcycle_v7": {18: ("libJit_level18_lcdcycle_v7.so", "f3d361a68deb092e00bf60ed6f9ceb3e3419b85a6859ff565d9a36a7b901fff9"),
                                19: ("libJit_level19_lcdcycle_v7.so", "306b255606bd39454785e40e9244ab004db6646d362f524eb6c45008fbe748ae"),
                                20: ("libJit_level20_lcdcycle_v7.so", "873d09d93f9ceba9ac0ee6edc646b4ecaef08265128d4d82f1d2b2c104d55381")},
-               "lcdcycle_v5": {18: ("libJit_level18_lcdcycle_v5.so", "3ad5810ffeb6fa954dc5517b9f54802e8029d68f92ef048862c528dc1fb546f4"),
+               # dsqmenu_v1 (2026-11-26, build_dsqmenu.py, F1040, F1041, modding/DSQMENU_V1.md, request 75): Sony's hidden De-Squeeze Display menu item made
+               # visible for the A7 IV: four flag halfwords, DATA only, three in appFw.so's first segment (option rows) and one in its data segment (the
+               # leaf; the MP_LD table, addressed at the load base + virtual address after its mapping and file offset are checked). Not run on a camera.
+               "dsqmenu_v1": {18: ("libJit_level18_dsqmenu_v1.so", "a94d564011c41ba80a8da575b204e82f6f9921cb7af5fe01eb88a19287e0ea60"),
+                              19: ("libJit_level19_dsqmenu_v1.so", "0086c0ec3654d10550b50508c1b533dd5b13d243f57bfa62def349949f374f07"),
+                              20: ("libJit_level20_dsqmenu_v1.so", "b9a028e3a8e727001678fac53437fa8dc41b11c09e96fffbf98b251282e5e9f7")},
+               "lcdcycle_v5": {18:("libJit_level18_lcdcycle_v5.so", "3ad5810ffeb6fa954dc5517b9f54802e8029d68f92ef048862c528dc1fb546f4"),
                                19: ("libJit_level19_lcdcycle_v5.so", "590a450de873e70bce6b5a7414183aa46892e71e2afa5ac6b54055380c5d728c"),
                                20: ("libJit_level20_lcdcycle_v5.so", "70e66d2757378d7e2391fcf512f68525a667bcb728c19feebe54afcb267843ec")},
                "lcdcycle_v4": {18: ("libJit_level18_lcdcycle_v4.so", "43105d821d730a784704cf2addbc5e4b076deb15be529787d5cbb64b65ab73f6"),
@@ -387,6 +401,14 @@ DESIGN_LIBS = {"fhband_v1": {5: ("libJit_level5_fhband_v1.so", "982d2ea9d8916246
                "ogfilesih57p3_v1": {18: ("libJit_level18_ogfilesih57p3_v1.so", "3bcf4066e30f219179f9c6a0c05ff035d85fbb67c6c5b26ce6c75bbd03d1d739"),
                                     19: ("libJit_level19_ogfilesih57p3_v1.so", "4266fef9a657418aee507751f307d0daf3878a3dce9b41b044455efe1ff98ab8"),
                                     20: ("libJit_level20_ogfilesih57p3_v1.so", "afcd051c49614ba64f558811da424e075c65df6120da0959998b99e30bf206de")},
+               # ogfilesh25_v1 (2026-11-26; build/build_ogfile_sh25.py; the owner: "change the 25p XAVC S mode to actually use HEVC", a proof of
+               # concept): one more step after either state's step 4 (ogfile2560_hs_s_v2 or ogfile57r300m1_v4). libmpr only, three table entries:
+               # comb row 2 (XAVC S 4K 4:2:2 10-bit) codec AVC -> HEVC, its MP4 track-config case -> row 7's (hvc1), m_vpcSt row 2 codec -> HEVC.
+               # XAVC S 25p 140M then finds XAVC HS 4K 25p 4:2:2's descriptor #428 (NTSC 24p 100M: #406). Put back before step 4 (step 4 guards
+               # row 2's codec word). Not run on a camera.
+               "ogfilesh25_v1": {18: ("libJit_level18_ogfilesh25_v1.so", "b681f18ec93f4be96e6fad8d6c5f8865c3cce285cb9cda50ebb9b3d7aff6f44b"),
+                                 19: ("libJit_level19_ogfilesh25_v1.so", "581535d95333ee02e7f5006ae8216192668bbd34f736f0b0cf7b02cc5da15754"),
+                                 20: ("libJit_level20_ogfilesh25_v1.so", "df994f5d7fe272a79551391749d491c79e2f5c901f8dbdc72f1488dd3e28b409")},
                # ogfile69_v1 (2026-11-20; build/build_og57.py --raster 6912 2880): the same 209 sites for a 6912x2880 picture (2.4:1): rows for the
                # first core 1440, +0x4c 10368, Level 6. The codec's own calculation asks less memory than for 5760x3840. Not run on a camera.
                "ogfile69_v1": {18: ("libJit_level18_ogfile69_v1.so", "15bccab5d034cabaf90b153c1e288193456a57a9dc1d01c774dbc323633dcdc3"),
@@ -473,6 +495,15 @@ DESIGN_LIBS["cddump_si_v1"] = {31: ("libJit_level31_cddump_si_v1.so", "a8a8208e4
 # cddump_si_v2 (2026-11-25, F1012): block 0x664 only (F1011: the S-I stream's CD block): a scan every 512 KB plus 64 KB at the competing
 # picture / chroma starts, to place the chroma plane and pictures 1-2 (50 spans, 1,015,808 bytes)
 DESIGN_LIBS["cddump_si_v2"] = {31: ("libJit_level31_cddump_si_v2.so", "ed85397f1dc7ee3e8d5bf0583589eab6f759bfadd6c06c84906ac6bc600acbe3")}
+# the hand-off (2026-11-26, after F1021): codec designs that move the S-I HD mode-2 front end's write to picture slot 1 (vcd12_v5 or vcd12_v2
+# plus 20 words), and level 32's fixture (fixture_si_v1) written into slot 0 for the core to read
+DESIGN_LIBS["vcd12_ho5_v1"] = {23: ("libJit_level23_vcd12_ho5_v1.so", "a359309b7b20d3847b31d059f7856e0a4acb360683e353a85ac6330233a284bf"),
+                               24: ("libJit_level24_vcd12_ho5_v1.so", "94e7905ce74d820450600cb38b8d0c2e54d3880b7739c5e92303092f59b7b461"),
+                               25: ("libJit_level25_vcd12_ho5_v1.so", "c6d61380ba8fd91d6ca54bf36d986e394f133c7351acc8fdbe8cfecef7022c79")}
+DESIGN_LIBS["vcd12_ho2_v1"] = {23: ("libJit_level23_vcd12_ho2_v1.so", "d76a587232e2266302698815b6f9eb0f30a48b1ebef1464d6b1e40e196d65c84"),
+                               24: ("libJit_level24_vcd12_ho2_v1.so", "8b36185044cdb08e975f411bda2722acf21b74bb18c277f5f27c8a275a1a23d0"),
+                               25: ("libJit_level25_vcd12_ho2_v1.so", "b2b9241f70ee4d880fdc1a4eeb41fe47627dc0dc76285fdb43b772867ce08389")}
+DESIGN_LIBS["fixture_si_v1"] = {32: ("libJit_level32_fixture_si_v1.so", "a22576f4edd2c8bf5113a4ca21799590cdbc7a012932d3a63a514cb78e6814c5")}
 DESIGN_LIBS["hello_v6"] = {27: ("libJit_level27_hello_v6.so", "ed813ee9e80b34684cc21dd8ca1e52029c682e191546c20fa04669ae20a1a7bf")}   # the first codec hardware job (V5 step 4c)
 DESIGN_LIBS["hello_v5"] = {27: ("libJit_level27_hello_v5.so", "e5a3f356bb4a10fee48537fb3c9bd95acf1d9dabcf045a4d2b22379a19274f69")}   # a read-only look at the codec block registers (V5 step 3)
 DESIGN_LIBS["hello_v4"] = {27: ("libJit_level27_hello_v4.so", "cef5863220798234df1e5f140930c1443cc360e429bbf003ddff534dc8147d48")}   # the codec CPUs' DRAM bandwidth (V5 step 2)
@@ -692,6 +723,21 @@ def check_result(data):
         v = re.search(rb"^== level 31 verdict: (.*)$", data, re.M)
         facts["level31"] = {"spans": spans, "verdict": v.group(1).decode("latin1") if v else None}
         facts["_spans"] = blobs
+    if LEVEL == 32:
+        part = data.split(b"== level 32:", 1)[1] if b"== level 32:" in data else b""
+        looks = {}
+        for m in re.finditer(rb"^(guard: slot 1 [YC] head|before: slot 0 [YC] head|after: slot 0 [YC] head) phys (0x[0-9a-f]{16}) (\d+) bytes: "
+                             rb"(?:(\d+) samples, spare bits set in (\d+), (\d+) distinct values; first 32 bytes ([0-9a-f]{64})|(!! mmap failed))$", part, re.M):
+            looks[m.group(1).decode()] = ({"phys": m.group(2).decode(), "samples": int(m.group(4)), "spare_set": int(m.group(5)), "distinct": int(m.group(6)),
+                                           "head": m.group(7).decode()} if m.group(4) else {"phys": m.group(2).decode(), "error": "mmap failed"})
+        writes = [{"plane": m.group(1).decode(), "phys": m.group(2).decode(), "bytes": int(m.group(3)), "sum": m.group(4).decode() if m.group(4) else None,
+                   "as_expected": m.group(5) == b"as expected"}
+                  for m in re.finditer(rb"^write ([YC]) plane phys (0x[0-9a-f]{16}) (\d+) bytes(?:, read back: sum (0x[0-9a-f]{16}) (as expected|DIFFERS)|: !! mmap failed.*)", part, re.M)]
+        v = re.search(rb"^== level 32 verdict: (.*)$", part, re.M)
+        verdict = v.group(1).decode("latin1") if v else None
+        done = bool(verdict) and verdict.startswith("WRITTEN: picture slot 0 holds the fixture")
+        facts["level32"] = {"looks": looks, "writes": writes, "verdict": verdict, "done": done,
+                            "refused": [] if done else [verdict or "no verdict line"]}
     if LEVEL == 10:
         logs = {}
         for name in (b"kprint", b"boottime"):
@@ -768,6 +814,20 @@ def check_result(data):
                                                        "tracking_check_now", "vdf_fit_word", "vdf_letterbox_words")},
                             "frames_with_a_frame": len(dec.get("frames_with_a_frame") or []),
                             "decode_problems": dec.get("problems"), "report": frame_state.report(dec).split("\n")}
+        facts["_out_ranges"], facts["_out_decoded"] = ranges, dec
+    if LEVEL == 33:
+        sys.path.insert(0, str(HERE.parent.parent / "build"))
+        import tone_state
+        ranges = tone_state.parse_result(data)
+        part = data.split(b"== level 33:", 1)[1] if b"== level 33:" in data else b""
+        dec = tone_state.decode(ranges)
+        facts["level33"] = {"complete": b"\nlevel 33 complete\n" in data, "released": data.count(b"\nbuffer released\n"),
+                            "problems": [m.decode() for m in re.findall(rb"^!! .*$", re.sub(rb"== cp range \w+ at 0x[0-9a-f]{8} raw (\d+) bytes follow\n(?s:.*?)\n== cp range end\n", b"", part), re.M)],
+                            "ranges": {n: {"address": "0x%08x" % a, "bytes": len(b), "sha256": c.sha256(b)} for n, (a, b) in ranges.items()},
+                            **{k: dec.get(k) for k in ("drive_mode_id", "output_size", "inputs", "memory_equals_file", "differences_from_file",
+                                                       "external_table_words", "colour_matrix")},
+                            "contexts": {k: {f: v[f] for f in v if f not in ("outputs", "inputs")} for k, v in (dec.get("contexts") or {}).items()},
+                            "decode_problems": dec.get("problems"), "report": tone_state.report(dec).split("\n")}
         facts["_out_ranges"], facts["_out_decoded"] = ranges, dec
     if LEVEL in (13, 14):
         head = re.search(rb"^== level 1[34]: (apply|put back) the four memory-manager words of (\S+)$", data, re.M)
@@ -983,11 +1043,12 @@ def check_result(data):
         head = re.search(rb"^== level 18: the encoder-side sites of (\S+), read-only$", data, re.M)
         part = data[head.start():] if head else b""
         verdict = re.search(rb"^== level 18 verdict: (READY|APPLIED|NOT READY): ", part, re.M)
-        lines = re.findall(rb"^  (av|lm) (\d+) (site|guard) (0x[0-9a-f]+) (\d+) (SAME|DIFFERS|STOCK|TARGET|OTHER) ([0-9a-f]*)$", part, re.M)
+        lines = re.findall(rb"^  (av|lm|ld) (\d+) (site|guard) (0x[0-9a-f]+) (\d+) (SAME|DIFFERS|STOCK|TARGET|OTHER) ([0-9a-f]*)$", part, re.M)
         tally = lambda tag: {w.lower(): sum(1 for l in lines if l[0] == tag and l[5] == w.encode()) for w in ("SAME", "DIFFERS", "STOCK", "TARGET", "OTHER")}
         where = re.search(rb"^(?:libmpr|appFw)\.so mapped at (0x[0-9a-f]+)-(0x[0-9a-f]+) (\S+), (\d+) entries$", part, re.M)
         facts["level18"] = {"design": head.group(1).decode() if head else None, "verdict": verdict.group(1).decode() if verdict else None,
                             "av_cam": tally(b"av"), "libmpr": tally(b"lm"),
+                            "data_segment": tally(b"ld") if b"\nappFw.so data segment, " in part else None,     # MP_LD designs (dsqmenu_v1)
                             "libmpr_mapping": {"start": where.group(1).decode(), "end": where.group(2).decode(), "permissions": where.group(3).decode()} if where else None,
                             "not_stock": [b" ".join(l).decode() for l in lines if l[5] in (b"DIFFERS", b"TARGET", b"OTHER")],
                             "problems": [m.decode().strip() for m in re.findall(rb"^.*!! .*$", part, re.M)]}
@@ -1028,7 +1089,9 @@ def check_result(data):
                               "done": b"\nDONE: every site holds the target bytes (" in part, "nothing_to_do": b"\nNOTHING TO DO: " in part,
                               "undone": b"\nNOT DONE: a step failed; every site this run touched was put back\n" in part,
                               "undo_incomplete": b"UNDO INCOMPLETE" in part,
-                              "put_back_by_the_undo": len(re.findall(rb"^undo (?:av|lm) site 0x[0-9a-f]+: put back$", part, re.M)),
+                              "data_segment": {"as_expected": count(b"ld", b"as expected"), "already": count(b"ld", b"already holds the target bytes"),
+                                               "written": count(b"ld", b"written and read back")},                                     # MP_LD designs (dsqmenu_v1)
+                              "put_back_by_the_undo": len(re.findall(rb"^undo (?:av|lm|ld) site 0x[0-9a-f]+: put back$", part, re.M)),
                               "refused": [m.decode() for m in re.findall(rb"^(!! .*; nothing is written)$", part, re.M)],
                               "problems": [m.decode() for m in re.findall(rb"^(!! .*)$", part, re.M)]}
     if LEVEL == 8:
@@ -1187,6 +1250,15 @@ def body_run(session, camera, lib):
                     % (len(f["log_entries"]), " (" + "; ".join(f["log_folder_error"]) + ")" if f["log_folder_error"] else "", f["klog_bytes"], f["klog_nonzero"],
                        "; reported: " + "; ".join(f["klog_problems"]) if f["klog_problems"] else ""))
         session.say("  /log entries: %s" % ", ".join(f["log_entries"][:64]))
+    if LEVEL == 32:
+        f = facts["level32"]
+        session.say("Level 32 (%s): %s" % (DESIGN, f["verdict"] or "MISSING"))
+        for name, lk in f["looks"].items():
+            session.say("  %-22s %s %s" % (name, lk["phys"], ("spare bits set in %d of %d samples, %d distinct values" % (lk["spare_set"], lk["samples"], lk["distinct"]))
+                                           if "samples" in lk else "mmap failed"))
+        for w in f["writes"]:
+            session.say("  wrote %s plane at %s, %d bytes: %s" % (w["plane"], w["phys"], w["bytes"], ("sum %s as expected" % w["sum"]) if w["as_expected"]
+                                                                   else ("sum %s DIFFERS" % w["sum"]) if w["sum"] else "NOT mapped"))
     if LEVEL == 31:
         f = facts["level31"]
         session.say("Level 31: %s; %d spans, %d bytes; spans holding anything but zeros: %d"
@@ -1210,6 +1282,13 @@ def body_run(session, camera, lib):
     if LEVEL == 28:
         f = facts["level28"]
         session.say("Level 28: %s; %d ranges copied (%s)%s" % ("complete" if f["complete"] else "NOT complete", len(f["ranges"]),
+                                                              ", ".join("%s %d bytes" % (n, r["bytes"]) for n, r in f["ranges"].items()),
+                                                              "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
+        for line in f["report"]:
+            session.say("  " + line)
+    if LEVEL == 33:
+        f = facts["level33"]
+        session.say("Level 33: %s; %d ranges copied (%s)%s" % ("complete" if f["complete"] else "NOT complete", len(f["ranges"]),
                                                               ", ".join("%s %d bytes" % (n, r["bytes"]) for n, r in f["ranges"].items()),
                                                               "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
         for line in f["report"]:
@@ -1270,6 +1349,9 @@ def body_run(session, camera, lib):
                     % (LEVEL, f["verb"], f["design"], state, "passed" if f["checks_passed"] else "NOT passed", f["as_expected"]["av_cam"], f["already"]["av_cam"],
                        f["written"]["av_cam"], " at %s-%s %s" % (w["start"], w["end"], w["permissions"]) if w else "", f["as_expected"]["libmpr"], f["already"]["libmpr"],
                        f["written"]["libmpr"], "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
+        if any(f["data_segment"].values()):
+            d = f["data_segment"]
+            session.say("  appFw.so data segment: %d as expected, %d already at target, %d written and read back" % (d["as_expected"], d["already"], d["written"]))
         if f["undo_incomplete"]:
             session.say("!! THE UNDO DID NOT COMPLETE: MAIN-PROCESSOR MEMORY MAY BE PARTLY CHANGED. Cold boot the camera now (battery out for 10 seconds) before anything else.")
     if LEVEL == 8:
@@ -1374,6 +1456,9 @@ def body_run(session, camera, lib):
                     % (f["design"], f["verdict"] or "MISSING", a["same"], a["differs"], a["stock"], a["target"], a["other"],
                        " at %s-%s %s" % (w["start"], w["end"], w["permissions"]) if w else " (not found)", m["same"], m["differs"], m["stock"], m["target"], m["other"],
                        "; reported: " + "; ".join(f["problems"]) if f["problems"] else ""))
+        if f.get("data_segment"):
+            d = f["data_segment"]
+            session.say("  appFw.so data segment: guards %d as in the file, %d not; sites %d stock, %d target, %d other" % (d["same"], d["differs"], d["stock"], d["target"], d["other"]))
         for line in f["not_stock"][:24]:
             session.say("  not stock: " + line)
 
@@ -1456,6 +1541,9 @@ def run_helper(data):
     if LEVEL == 28:
         files["/dev/mem"] = b""
         cp = emu_built.frame_model()[1]                    # the four model rings with one entry of each filled in, and the file's tables
+    if LEVEL == 33:
+        files["/dev/mem"] = b""
+        cp = emu_built.tone_model()[1]                     # S-Log3 variant 6 computed in contexts 0 and CAM, S-Log2 in LV, and the file's tables
     if LEVEL == 21:
         files["/dev/mem"] = b""
         cp = emu_built.rdc_model()[1]                      # the 25 RDC objects with made-up types in an address pattern
@@ -1481,6 +1569,9 @@ def run_helper(data):
     if LEVEL == 26:
         files["/dev/mem"] = b""
         phys = emu_built.w_model(stock=(c.EXTRACTED / VCD_FILE).read_bytes())       # after a boot: the area at 0x43c000000 with the stock image, an empty record area
+    if LEVEL == 32:
+        files["/dev/mem"] = b""
+        phys = emu_built.x32_phys()                         # slot 1 heads hold a front-end picture, slot 0 DRAM never written
     if LEVEL == 31:
         files["/dev/mem"] = b""
         rows = emu_built.d31_rows(DESIGN)
@@ -1501,13 +1592,19 @@ def run_helper(data):
         lfile = LM_FILE if lname == "libmpr.so" else APPFW_FILE
         av_mem, lm_mem = emu_built.mp_memory((c.EXTRACTED / AV_FILE).read_bytes(), (c.EXTRACTED / lfile).read_bytes(), DESIGN)     # a stock camera
         phys, own = {emu_built.AVCAM_PHYS: av_mem}, {lbase: lm_mem}
+        t_ld = emu_built.mp_ld_table(DESIGN)
+        if t_ld:                                           # MP_LD (dsqmenu_v1): the process also holds appFw.so's r--p mapping, as the camera's im.elf does
+            own[lbase + emu_built.LD_VA] = emu_built.ld_memory((c.EXTRACTED / lfile).read_bytes(), t_ld)
     if LEVEL == 27:                                        # the joint model: the helper drives the codec model, the real MIPS stubs run in it
         files["/dev/mem"] = b""
         model = (emu_built.CodecModel(scratch=True, steps_per_ms=200000) if DESIGN == "hello_v4" else emu_built.CodecModel(regs=True) if DESIGN == "hello_v5"
                  else emu_built.CodecModel(job="copy") if DESIGN == "hello_v6" else emu_built.CodecModel())
         run = emu_built.Run27(data, files, dirs, emu_built.k_phys((c.EXTRACTED / VCD_FILE).read_bytes()), model).go()
     else:
-        run = emu_built.Run(data, LEVEL, files, dirs, phys, cp=cp, own=own).go()
+        run = emu_built.Run(data, LEVEL, files, dirs, phys, cp=cp, own=own)
+        if LEVEL == 32:
+            run.fix_windows = emu_built.x32_windows()
+        run = run.go()
     if run.bad:
         raise AssertionError("emulated helper: " + run.bad)
     return run.writes[emu_built.RESULT], "emulated"
@@ -1703,6 +1800,15 @@ def selftest(lib):
               and f["tracking_check_now"]["expected"] == [0, 38, 640, 404] and f["tracking_check_now"]["result"].startswith("FAIL"),
               "normal run, level 28: three ranges copied out and decoded: the ring entries the model filled in, the stock tables, and the tracking "
               "check repeated (a rectangle 7 units off is reported as failing)")
+    if LEVEL == 33 and sim.how == "emulated":
+        f = r["result"]["level33"]
+        check(f["complete"] and not f["problems"] and not f["decode_problems"] and len(f["ranges"]) == 6 and f["released"] == 1
+              and f["memory_equals_file"] is True and f["inputs"]["0"]["table_number"] == 31 and f["inputs"]["0"]["variant"] == 6
+              and f["contexts"]["0"]["equals"] == "S-Log3 variant 6" and f["contexts"]["CAM"]["equals"] == "S-Log3 variant 6"
+              and f["contexts"]["LV"]["equals"] == "S-Log2 variant 2" and f["contexts"]["1"]["equals"] == "all zero (not computed)"
+              and f["drive_mode_id"] == "0x8c0" and "outputs" not in f["contexts"]["0"],
+              "normal run, level 33: six ranges copied out and decoded: the model's inputs (S-Log3 variant 6), its three computed curves named "
+              "by source table, and the tables in memory equal to the firmware file")
     if LEVEL == 21 and sim.how == "emulated":
         f = r["result"]["level21"]
         check(f["complete"] and not f["problems"] and not f["decode_problems"] and len(f["ranges"]) == 2 and len(f["ports"]) == 25
@@ -1745,6 +1851,12 @@ def selftest(lib):
         f = r["result"]["level23"]
         check(f["verdict"] == "READY" and f["design"] == DESIGN and len(f["copies_at"]) == 1 and f["sites"]["stock"] >= 1 and not f["sites"]["target"]
               and not f["guards"]["differs"] and not f["problems"], "normal run, level 23 (%s): one copy found, every guard as in the file, every site stock, READY" % DESIGN)
+    if LEVEL == 32 and sim.how == "emulated":
+        f = r["result"]["level32"]
+        lk = f["looks"]
+        check((f["verdict"] or "").startswith("WRITTEN: picture slot 0 holds the fixture") and len(f["writes"]) == 2 and all(w["as_expected"] for w in f["writes"])
+              and lk["guard: slot 1 Y head"]["spare_set"] == 0 and lk["guard: slot 1 C head"]["spare_set"] == 0 and lk["after: slot 0 Y head"]["spare_set"] == 0
+              and len(lk) == 6, "normal run, level 32 (%s): both guards pass, both planes written with their sums as expected, verdict WRITTEN" % DESIGN)
     if LEVEL == 24 and sim.how == "emulated":
         f = r["result"]["level2425"]
         check(f["done"] and f["checks_passed"] and f["as_expected"] == f["written"] >= 1 and len(f["copies_at"]) == 1 and not f["problems"] and f["verb"] == "apply",
@@ -1757,13 +1869,17 @@ def selftest(lib):
         import json
         ps = json.loads((HERE.parent.parent / "modding" / "designs" / (DESIGN + ".json")).read_text(encoding="utf8"))["patches"]
         n_av, n_lm = sum(1 for x in ps if x["binary"] == "av-cam.bin"), sum(1 for x in ps if x["binary"] != "av-cam.bin")
+        n_ld = sum(1 for x in ps if x.get("kind") == "M-leaf-data")          # MP_LD: appFw.so data-segment sites (dsqmenu_v1); 0 for every other design
+        n_lm -= n_ld
         f = r["result"]["level1920"]
     if LEVEL == 19 and sim.how == "emulated":
         check(f["done"] and f["checks_passed"] and f["as_expected"] == {"av_cam": n_av, "libmpr": n_lm} and f["written"] == {"av_cam": n_av, "libmpr": n_lm}
+              and f["data_segment"]["as_expected"] == n_ld and f["data_segment"]["written"] == n_ld
               and not f["problems"] and f["design"] == DESIGN and f["verb"] == "apply" and f["libmpr_mapping"]["permissions"] == "r-xp",
-              "normal run, level 19 (%s): the checks pass, %d + %d sites as expected, written and read back, done" % (DESIGN, n_av, n_lm))
+              "normal run, level 19 (%s): the checks pass, %d + %d + %d sites as expected, written and read back, done" % (DESIGN, n_av, n_lm, n_ld))
     if LEVEL == 20 and sim.how == "emulated":
-        check(f["nothing_to_do"] and f["checks_passed"] and f["already"] == {"av_cam": n_av, "libmpr": n_lm} and not sum(f["written"].values()) and not f["problems"]
+        check(f["nothing_to_do"] and f["checks_passed"] and f["already"] == {"av_cam": n_av, "libmpr": n_lm} and f["data_segment"]["already"] == n_ld
+              and not sum(f["written"].values()) and not f["data_segment"]["written"] and not f["problems"]
               and f["verb"] == "put back", "normal run, level 20 on a stock camera (%s): nothing to do, nothing written" % DESIGN)
     if LEVEL == 27 and sim.how == "emulated":
         f = r["result"]["level27"]
@@ -1801,7 +1917,8 @@ def selftest(lib):
         import emu_built
         lm_guards = sum(1 for e in emu_built.mp_tables(DESIGN)[3] if not e[2])       # the guards of the mp_lm table, as its header lists them
         f = r["result"]["level18"]
-        check(f["verdict"] == "READY" and f["design"] == DESIGN and f["av_cam"]["stock"] + f["libmpr"]["stock"] == n and not f["problems"] and not f["not_stock"]
+        check(f["verdict"] == "READY" and f["design"] == DESIGN and f["av_cam"]["stock"] + f["libmpr"]["stock"] + (f.get("data_segment") or {}).get("stock", 0) == n
+              and not f["problems"] and not f["not_stock"]
               and f["av_cam"]["same"] and f["libmpr"]["same"] == lm_guards and f["libmpr_mapping"]["permissions"] == "r-xp",
               "normal run, level 18 (%s): %d sites reported stock, every guard as in the file, the verdict is READY" % (DESIGN, n))
     if LEVEL == 2 and sim.how == "emulated":
@@ -1880,12 +1997,12 @@ def main():
     parser.add_argument("--remove-only", action="store_true")
     parser.add_argument("--clear-result", metavar="SHA256", help="before the run, delete the helper's result file from the RAM disk, only if its SHA-256 is this (a result already saved here)")
     parser.add_argument("--clear-only", action="store_true", help="with --clear-result: only delete that file; send no library")
-    parser.add_argument("--level", type=int, choices=sorted(set(LIBS) | {13, 14, 16, 17, 18, 19, 20, 23, 24, 25, 31}), default=1, help="which pinned build to use (default 1)")
+    parser.add_argument("--level", type=int, choices=sorted(set(LIBS) | {13, 14, 16, 17, 18, 19, 20, 23, 24, 25, 31, 32}), default=1, help="which pinned build to use (default 1)")
     parser.add_argument("--design", choices=["og4k_data_v1"] + sorted(DESIGN_LIBS), default="og4k_data_v1",
                         help="for levels 5, 6 and 8: whose site table (default og4k_data_v1); for levels 13 and 14: dmmwb4080_v1 or dmmwb4688_v1; "
                              "for levels 16 and 17: outsz2560_v1, og2560e4_v1, og57cp_v1, og57cp_v2, og57cp_v3, dmmslot8_v1, dmmslot8_v2 or lcdfill_v1; for level 18: ogfile2560_hs_v1, ogfile2560_s_v1, ogfile2560_hs_s_v1, ogfile2560_hs_s_v2, ogfile57_v1, ogfile57r300_v1, ogfile57r300m1_v1, ogfile57r300m1_v2, ogfile57r300m1_v3, ogfile57r300m1_v4, ogfilesi2560_v1, ogfilesi57_v1, ogfilesih57_v1, ogfilesih57p1_v1, ogfilesih57p2_v1 or ogfilesih57p3_v1; "
                              "for levels 19 and 20: ogfile2560_hs_v1, ogfile2560_hs_s_v1, ogfile2560_hs_s_v2, ogfile57_v1, ogfile57r300_v1, ogfile57r300m1_v1, ogfile57r300m1_v2, ogfile57r300m1_v3, ogfile57r300m1_v4, "
-                             "ogfilesi2560_v1, ogfilesi57_v1, ogfilesih57_v1, ogfilesih57p1_v1, ogfilesih57p2_v1 or ogfilesih57p3_v1 (the XAVC S-I 4K step, after the state's own)")
+                             "ogfilesi2560_v1, ogfilesi57_v1, ogfilesih57_v1, ogfilesih57p1_v1, ogfilesih57p2_v1 or ogfilesih57p3_v1 (the XAVC S-I 4K step, after the state's own), ogfilesh25_v1 (XAVC S 4K 4:2:2 as HEVC, after the state's own)")
     parser.add_argument("--firmware-shown")
     parser.add_argument("--library-sha256", help="the SHA-256 of the library you reviewed; must equal the pinned one")
     args = parser.parse_args()

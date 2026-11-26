@@ -1,7 +1,15 @@
 # FX6 6.02 port: the LCD at 3:2 (screen step `lcd32_fx6_v1`)
 
 Build `fx6_602` (ILME-FX6, firmware 6.02; `cpapp-b.bin` loaded at 0x108000, SHA-256 `b432af72…def6`). Written 2026-11-26 by the screen
-part of the FX6 open-gate port. Static analysis and Unicorn emulation only: nothing here has run on an FX6.
+part of the FX6 open-gate port. Static analysis and Unicorn emulation only.
+
+**ON TWO FX6s IT DOES NOT WORK (2026-11-25/26, repo issues 1 and 2).** Panel type is 1 on both (as expected). Tester 1's dump after S16
+shows all 8 words as designed; the preview jittered left and right very fast (in the state without the memory step). Tester 2 recorded
+correctly with S16 in and saw the picture "split into three horizontal sections". Without S16 the preview is stable (the 3:2 picture
+stretched to 16:9). The emulation below covers the layout function's rectangle (100, 0, 1080, 720), not what the display drive does with a
+picture narrower than the panel; the stock FX6 may never show one. Candidates not checked: the rectangle's alignment (x 100, width 1080),
+two layout routines alternating (the jitter), the same change reaching SDI/HDMI. No dump of the final state with S16 exists yet. Since the
+second kit S16 is applied only with `fx6_apply.py apply --screen` (`open_gate_apply_with_screen`).
 
 - Builder: `build/build_lcd_fx6.py` → `modding/designs/lcd32_fx6_v1.json` (8 words, 30 guards).
 - Emulation: `build/emu_lcd_fx6.py --save` → `evidence/fx6/lcd32_fx6_v1_emu.json` (43 cases, all as expected).

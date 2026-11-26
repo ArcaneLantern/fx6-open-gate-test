@@ -47,6 +47,17 @@ PROFILE_TABLES = ((0xFFFFFFC00139BCCC - AVB, 373), (0xFFFFFFC0013B32CC - AVB, 31
 UNIT_TABLE = 0xFFFFFFC00138389C - AVB
 CLIP = 0xFFFFFFC001381AF0 - AVB
 RATES = {5: "23.98p", 3: "25p"}
+# --rate30 (2026-11-26, the FX3 kit: open gate at 29.97p as well, owner's request): rate code 2 (29.97p) joins the design. On the FX3 one encoder
+# core serves every stock 4K long-GOP rate up to 59.94p (all its 3840x2160 descriptors at codes 0-5 have UseCore 0), so 3840x2560 at 29.97p
+# (295 million pixels a second) keeps one core as 23.98p and 25p do. Only with --meta; the union design is then written as _v3.
+RATE30 = "--rate30" in sys.argv
+if RATE30:
+    RATES[2] = "29.97p"
+
+
+def rate_text():
+    v = list(RATES.values())
+    return " and ".join(v) if len(v) < 3 else ", ".join(v[:-1]) + " and " + v[-1]
 BUILD, SUFFIX = "a7iv_602", ""
 CLIP_8K, CLIP_4K = 1, 16                 # clip-format codes of rows 1 (8192x4320) and 5 (3840x2160)
 MP4_IMM = {"hs": 0x222BDC, "s": 0x222B90}
@@ -162,7 +173,7 @@ class Design:
 def build(fam, lm, av, level6):
     f = FAMILIES[fam]
     d = Design(f"ogfile2560_{fam}{SUFFIX}_v1" + ("_l6" if level6 else ""),
-               f"A 3840 by 2560 file on {f['title']} at 23.98p and 25p: encoder request, encoder memory class, descriptors, profiles and the monitoring label")
+               f"A 3840 by 2560 file on {f['title']} at {rate_text()}: encoder request, encoder memory class, descriptors, profiles and the monitoring label")
     md = capstone.Cs(capstone.CS_ARCH_ARM64, capstone.CS_MODE_ARM)
     # ---- libmpr
     for row, (chroma, depth, name) in f["combs"].items():
@@ -242,7 +253,7 @@ def build(fam, lm, av, level6):
 def combine(parts):
     """The union of the family designs: one design that serves both formats. The two sites they share (the unit-type row and the clip-format row)
     must be the same bytes in each; they are taken once."""
-    d = Design(f"ogfile2560_hs_s{SUFFIX}_v1", "A 3840 by 2560 file on XAVC HS 4K and on XAVC S 4K at 23.98p and 25p: the union of ogfile2560_hs_v1 and ogfile2560_s_v1")
+    d = Design(f"ogfile2560_hs_s{SUFFIX}_v1", f"A 3840 by 2560 file on XAVC HS 4K and on XAVC S 4K at {rate_text()}: the union of ogfile2560_hs_v1 and ogfile2560_s_v1")
     seen = {}
     for part, _ in parts:
         for p in part.patches:
@@ -283,7 +294,7 @@ def main():
         assert not level6 and SUFFIX in ("", "_fx3", "_fx2", "_c2", "_fx30", "_a1m2", "_a6700"), "--meta: the A7 IV, FX3, FX2, A7C II, FX30, A1 II and A6700 3840x2560 union designs only"
         import mp4_meta_sites
         fam, fmt, du, picked_u = built[-1]
-        dm = Design(f"ogfile2560_hs_s{SUFFIX}_v2", du.title + "; the MP4 headers (tkhd, stsd, Sony's PROF) say 3840x2560")
+        dm = Design(f"ogfile2560_hs_s{SUFFIX}_v{3 if RATE30 else 2}", du.title + "; the MP4 headers (tkhd, stsd, Sony's PROF) say 3840x2560")
         dm.patches = [dict(p) for p in du.patches]
         meta = mp4_meta_sites.sites(W, H1, BUILD)
         mp4_meta_sites.check(lm, meta)
@@ -306,6 +317,9 @@ def main():
                                                         "a1m2_400": "build/emu_mp4_meta.py --build a1m2_400 -> evidence/a1m2/encoder/mp4_meta_emu_a1m2.json",
                                                         "a6700_200": "build/emu_mp4_meta.py --build a6700_200 -> evidence/a6700/encoder/mp4_meta_emu_a6700.json"}[BUILD]}}
         built.append(("hs_s", fmt, dm, picked_u))
+    if RATE30:                                       # only the union design with the header heights: the v1 / v2 files keep their 24p/25p content
+        assert "--meta" in sys.argv and SUFFIX == "_fx3" and not level6, "--rate30: the FX3 union design with --meta only"
+        built = built[-1:]
     designs = []
     for fam, fmt, d, picked in built:
         by = {}

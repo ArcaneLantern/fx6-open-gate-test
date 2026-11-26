@@ -106,8 +106,8 @@
 #ifndef LEVEL
 #define LEVEL 1
 #endif
-#if LEVEL < 1 || LEVEL > 31 || LEVEL == 11
-#error "LEVEL must be 1 to 10, or 12 to 31"
+#if LEVEL < 1 || LEVEL > 33 || LEVEL == 11
+#error "LEVEL must be 1 to 10, or 12 to 33"
 #endif
 #if LEVEL >= 3 && defined(HOST_TEST)
 #error "levels 3 to 8 have no PC build: they call three functions of the camera's libsencore.so (see emu_built.py)"
@@ -202,7 +202,7 @@ static i64 sys_write(int fd, const void *b, u64 n) { return sc(NR_write, fd, (i6
 static i64 sys_close(int fd) { return sc(NR_close, fd, 0, 0, 0, 0, 0); }
 static i64 sys_getdents64(int fd, void *b, u64 n) { return sc(NR_getdents64, fd, (i64)b, (i64)n, 0, 0, 0); }
 static i64 sys_geteuid(void) { return sc(NR_geteuid, 0, 0, 0, 0, 0, 0); }
-#if LEVEL == 2 || LEVEL == 3 || (LEVEL >= 7 && LEVEL <= 12) || LEVEL == 15 || LEVEL == 18 || (LEVEL >= 21 && LEVEL <= 28) || LEVEL == 31  /* a level 1 build contains no mapping call at all */
+#if LEVEL == 2 || LEVEL == 3 || (LEVEL >= 7 && LEVEL <= 12) || LEVEL == 15 || LEVEL == 18 || (LEVEL >= 21 && LEVEL <= 28) || LEVEL == 31 || LEVEL == 32 || LEVEL == 33  /* a level 1 build contains no mapping call at all */
 static i64 sys_mmap_ro(int fd, u64 len, u64 off)
 {
     i64 r = sc(NR_mmap, 0, (i64)len, 1 /* PROT_READ */, 1 /* MAP_SHARED */, fd, (i64)off);
@@ -210,7 +210,7 @@ static i64 sys_mmap_ro(int fd, u64 len, u64 off)
 }
 #endif
 /* The only writable mapping call in this file (and levels 29 and 30's ad_map_code). Levels 4 to 6, 13, 14, 16 and 17 map their own transfer buffer to fill it; levels 19 and 20 map the pages of av-cam.bin's tables; levels 24 and 25 one page of a codec firmware copy at a time; levels 29 and 30 one page of av-cam.bin's data. */
-#if (LEVEL >= 4 && LEVEL <= 6) || LEVEL == 13 || LEVEL == 14 || LEVEL == 16 || LEVEL == 17 || LEVEL == 19 || LEVEL == 20 || LEVEL == 24 || LEVEL == 25 || LEVEL == 27 || LEVEL == 29 || LEVEL == 30
+#if (LEVEL >= 4 && LEVEL <= 6) || LEVEL == 13 || LEVEL == 14 || LEVEL == 16 || LEVEL == 17 || LEVEL == 19 || LEVEL == 20 || LEVEL == 24 || LEVEL == 25 || LEVEL == 27 || LEVEL == 29 || LEVEL == 30 || LEVEL == 32
 static i64 sys_mmap_rw(int fd, u64 len, u64 off)
 {
     i64 r = sc(NR_mmap, 0, (i64)len, 3 /* PROT_READ | PROT_WRITE */, 1 /* MAP_SHARED */, fd, (i64)off);
@@ -1190,7 +1190,7 @@ static void level12(void)
 
 /* ------------------------------------------------------------------ level 15: the movie output state, read-only */
 
-#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28
+#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28 || LEVEL == 33
 /* Level 21 is this same code with its own table of ranges: the raw ports' state (the RDC objects of the device group), read-only.
    The three imports, all from libsencore.so (finding F512). The transfer is used with direction 0 only: coprocessor to buffer. */
 extern u64 cam_dmm_alloc(u32 size, u32 *handle) __asm__("_Z9dmm_allocjPj");
@@ -1224,6 +1224,23 @@ static const struct l15_range out_fixed[] = {
     { 0x011fc000U, 0x15000U, "widget_models" },   /* 0x11fc000 to 0x1211000: the four model rings and their index words */
     { 0x00d7b000U, 0x1000U, "frame_tables" },     /* the three tables of expected live-view rectangles */
     { 0x001e4000U, 0x1000U, "vdf_words" },        /* the display's fit-mode table and letterbox constants */
+};
+#elif LEVEL == 33
+#define L15_N "33"
+#define L15_HEAD "== level 33: the tone-curve state, read-only\n"
+/* cpapp-b.bin 6.02 (finding F1043): the picture-quality module's variables, which the firmware's own descriptor tables (0xd1177c and
+   neighbours) name with their addresses, all in 0x1a67000 to 0x1a6dfff: the tone-curve inputs (table number 0x1a68d0c) and the computed
+   curves of the four contexts (inputs, divisions, outputs from 0x1a6a5b8, 0x1a6ab5c, 0x1a6cad0, 0x1a6d074). The pointer table GetMainGamma
+   0x3d06fc picks the curve's source table from (0xfbba78), the S-Log2 and S-Log3 source tables (0xcb2da8 to 0xcb4f2c), the settings block
+   0x10fe5d0, the bytes GetMainGamma reads at 0x14f69bc to 0x14f69cf, and the camera core's context for the mode the camera is in.
+   Nothing is found through a pointer. */
+static const struct l15_range out_fixed[] = {
+    { 0x01a67000U, 0x7000U, "pq_state" },          /* the picture-quality module's inputs and results, with the four computed curves */
+    { 0x00fbb000U, 0x1000U, "curve_pointers" },    /* the curve pointer table 0xfbba78, seven pointers a table number */
+    { 0x00cb2000U, 0x3000U, "slog_tables" },       /* the seven S-Log2 and the seven S-Log3 source tables */
+    { 0x010fe000U, 0x2000U, "settings" },          /* the settings block 0x10fe5d0 (external-table words +0x33c, colour matrix +0xa1e) */
+    { 0x014f6000U, 0x1000U, "curve_globals" },     /* 0x14f69bc to 0x14f69cf */
+    { 0x011d0000U, 0x2000U, "context" },           /* the camera core's context 0x11d0680, as in level 15 */
 };
 #else
 #define L15_N "15"
@@ -1793,12 +1810,85 @@ static int mp_find_lib(u64 *lo, u64 *hi, char *perms)
     return found;
 }
 
+#ifdef MP_LD
+/* 2026-11-26 (dsqmenu_v1): a table of sites in MP_LIB's data segment, mp_ld[], with their file offsets in mp_ld_foff[]. A site's address in this
+ * process is the start of the library's mapping with file offset 0 (its load base: the first segment has virtual address 0) plus the site's
+ * virtual address. It is used only if one readable mapping of MP_LIB holds the whole site and that mapping's file offset, plus the site's
+ * distance from the mapping's start, gives back the site's file offset; so the bytes are the ones the design names. Nothing else is read. */
+static int mp_ld_line(const char *s, u64 n, u64 at, u64 len, u64 *foff, char *perms)
+{
+    static const char want[] = "/" MP_LIB;
+    u64 w = sizeof want - 1, a, b, off;
+    const char *p = s;
+    if (n < w) return 0;
+    for (u64 k = 0; k < w; k++) if (s[n - w + k] != want[k]) return 0;
+    if (!mp_hex(&p, &a) || *p++ != '-' || !mp_hex(&p, &b) || *p++ != ' ') return 0;
+    for (int k = 0; k < 4; k++) { if (!*p) return 0; perms[k] = *p++; }
+    perms[4] = 0;
+    if (*p++ != ' ' || !mp_hex(&p, &off) || b <= a || at < a || at >= b || len > b - at) return 0;    /* at < b first: b - at must not wrap */
+    *foff = off + (at - a);
+    return 1;
+}
+
+/* 1 if the site at `at` (`len` bytes) lies in a readable mapping of MP_LIB at file offset `foff_want`. */
+__attribute__((noinline)) static int mp_ld_mapped(u64 at, u64 len, u64 foff_want)
+{
+    static u8 buf[4096];
+    static char line[512];
+    char perms[8];
+    u64 n = 0, foff = 0; int found = 0, over = 0;
+    i64 fd = sys_open(TEST_ROOT "/proc/self/maps", F_RDONLY, 0);
+    if (fd < 0) return 0;
+    for (;;) {
+        i64 r = sys_read((int)fd, buf, sizeof buf);
+        if (r <= 0) break;
+        for (i64 i = 0; i < r; i++) {
+            char c = (char)buf[i];
+            if (c != '\n') { if (n + 1 < sizeof line) line[n++] = c; else over = 1; continue; }
+            line[n] = 0;
+            if (!over && !found && mp_ld_line(line, n, at, len, &foff, perms)) found = 1;       /* the first mapping that holds the site */
+            n = 0; over = 0;
+        }
+    }
+    sys_close((int)fd);
+    return found && perms[0] == 'r' && foff == foff_want;
+}
+#endif
+
 #if LEVEL == 18
 static void mp_sum(const char *what, const struct mp_tally *y)
 {
     puts_(what); puts_(": guards "); putnum(y->guards_ok); puts_(" of "); putnum(y->guards); puts_(" as in the file; sites: ");
     putnum(y->stock); puts_(" stock, "); putnum(y->target); puts_(" target, "); putnum(y->other); puts_(" other\n");
 }
+
+#ifdef MP_LD
+/* The data-segment table against this process's memory (see mp_ld_mapped): an entry is read only after its mapping is checked. */
+static void mp_ld_check(u64 base, struct mp_tally *y)
+{
+    u64 n = sizeof mp_ld / sizeof mp_ld[0];
+    puts_(MP_LIB " data segment, at the load base plus the virtual address, "); putnum((i64)n); puts_(" entries\n");
+    for (u64 i = 0; i < n; i++) {
+        const struct mp_site *e = &mp_ld[i];
+        u8 got[16];
+        puts_("  ld "); putnum((i64)i); puts_(e->kind ? " site " : " guard "); mp_putx(e->off); puts_(" "); putnum(e->len);
+        if (e->kind) y->sites++; else y->guards++;
+        if (e->len > 16 || !mp_ld_mapped(base + e->off, e->len, mp_ld_foff[i])) {
+            puts_(" !! not in a readable mapping of " MP_LIB " at its file offset\n"); y->other++; continue;
+        }
+        const volatile u8 *mem = (const volatile u8 *)(base + e->off);
+        for (u32 k = 0; k < e->len; k++) got[k] = mem[k];                     /* read once; what is printed is what was compared */
+        if (!e->kind) {
+            if (mp_eq(got, e->stock, e->len)) { y->guards_ok++; puts_(" SAME "); } else puts_(" DIFFERS ");
+        } else {
+            if (mp_eq(got, e->stock, e->len)) { y->stock++; puts_(" STOCK "); }
+            else if (mp_eq(got, e->changed, e->len)) { y->target++; puts_(" TARGET "); }
+            else { y->other++; puts_(" OTHER "); }
+        }
+        puthex(got, e->len); puts_("\n");
+    }
+}
+#endif
 
 static void level18(void)
 {
@@ -1831,10 +1921,23 @@ static void level18(void)
     }
     mp_sum(MP_LIB, &lm);
 
+#ifdef MP_LD
+    struct mp_tally ld = { 0, 0, 0, 0, 0, 0 };
+    u64 n_ld = sizeof mp_ld / sizeof mp_ld[0];
+    if (lm_read) mp_ld_check(lo, &ld);
+    else puts_("!! the data segment is not read: the load base is not known\n");
+    mp_sum(MP_LIB " data segment", &ld);
+    int whole = av_read && lm_read && av.guards == av.guards_ok && lm.guards == lm.guards_ok && ld.guards == ld.guards_ok
+                && av.sites + lm.sites + ld.sites == n_av + n_lm + n_ld - av.guards - lm.guards - ld.guards;
+    if (whole && !av.target && !av.other && !lm.target && !lm.other && !ld.target && !ld.other) puts_("== level 18 verdict: READY: every guard is as in the file and every site holds the stock bytes\n");
+    else if (whole && !av.stock && !av.other && !lm.stock && !lm.other && !ld.stock && !ld.other) puts_("== level 18 verdict: APPLIED: every guard is as in the file and every site holds the design's bytes\n");
+    else puts_("== level 18 verdict: NOT READY: see the lines above\n");
+#else
     int whole = av_read && lm_read && av.guards == av.guards_ok && lm.guards == lm.guards_ok && av.sites + lm.sites == n_av + n_lm - av.guards - lm.guards;
     if (whole && !av.target && !av.other && !lm.target && !lm.other) puts_("== level 18 verdict: READY: every guard is as in the file and every site holds the stock bytes\n");
     else if (whole && !av.stock && !av.other && !lm.stock && !lm.other) puts_("== level 18 verdict: APPLIED: every guard is as in the file and every site holds the design's bytes\n");
     else puts_("== level 18 verdict: NOT READY: see the lines above\n");
+#endif
 }
 #endif
 #endif
@@ -2333,6 +2436,10 @@ close:
 #endif
 typedef char mp_av_fits[(sizeof mp_av / sizeof mp_av[0]) <= MP_MAX ? 1 : -1];
 typedef char mp_lm_fits[(sizeof mp_lm / sizeof mp_lm[0]) <= MP_MAX ? 1 : -1];
+#ifdef MP_LD
+typedef char mp_ld_fits[(sizeof mp_ld / sizeof mp_ld[0]) <= MP_MAX ? 1 : -1];
+typedef char mp_ld_foff_fits[(sizeof mp_ld_foff / sizeof mp_ld_foff[0]) == (sizeof mp_ld / sizeof mp_ld[0]) ? 1 : -1];
+#endif
 #define NR_pread64 67
 #define NR_pwrite64 68
 #define F_RDWR 2                           /* O_RDWR, and no O_SYNC: see level19() */
@@ -2382,6 +2489,12 @@ static int mp_refuse(const char *tag, const struct mp_site *e, const char *why)
 }
 
 static u8 mp_do_av[MP_MAX], mp_do_lm[MP_MAX];          /* per entry: 0 leave, 1 to write, 2 touched by this run */
+#ifdef MP_LD
+static u8 mp_do_ld[MP_MAX];
+
+/* Pass 1 for the data-segment table: each entry's mapping is checked (mp_ld_mapped), then the entry is judged as mp_pass1 judges one. */
+static int mp_ld_pass1(u64 base, u32 *n_todo);
+#endif
 
 /* Pass 1 for one table: nothing is written. Returns 0 after reporting the first thing that is not as it must be. */
 static int mp_pass1(const char *tag, const struct mp_site *t, u64 n, u8 *todo, const volatile u8 *mem, u64 first, u64 span, int fd, u32 *n_todo)
@@ -2407,6 +2520,19 @@ static int mp_pass1(const char *tag, const struct mp_site *t, u64 n, u8 *todo, c
     return 1;
 }
 
+#ifdef MP_LD
+__attribute__((noinline)) static int mp_ld_pass1(u64 base, u32 *n_todo)
+{
+    const struct mp_site *e = mp_ld;                     /* stepped as a pointer: no table stride is kept in a register across the checks */
+    for (u64 i = 0; i < sizeof mp_ld / sizeof mp_ld[0]; i++, e++) {
+        mp_do_ld[i] = 0;
+        if (e->len > 16 || !mp_ld_mapped(base + e->off, e->len, mp_ld_foff[i])) return mp_refuse("ld", e, "is not in a readable mapping of " MP_LIB " at its file offset");
+        if (!mp_pass1("ld", e, 1, &mp_do_ld[i], (const volatile u8 *)(base + e->off), e->off, e->len, -1, n_todo)) return 0;
+    }
+    return 1;
+}
+#endif
+
 static void mp_run(volatile u8 *av, int fd, int pm, u64 lo, u64 hi)
 {
     u64 n_av = sizeof mp_av / sizeof mp_av[0], n_lm = sizeof mp_lm / sizeof mp_lm[0];
@@ -2414,6 +2540,10 @@ static void mp_run(volatile u8 *av, int fd, int pm, u64 lo, u64 hi)
     int failed = 0, undo_bad = 0;
     if (!mp_pass1("av", mp_av, n_av, mp_do_av, av, MP_AV_FIRST, MP_AV_BYTES, fd, &n_todo)) return;
     if (!mp_pass1("lm", mp_lm, n_lm, mp_do_lm, (const volatile u8 *)lo, 0, hi - lo, -1, &n_todo)) return;
+#ifdef MP_LD
+    u64 n_ld = sizeof mp_ld / sizeof mp_ld[0];
+    if (!mp_ld_pass1(lo, &n_todo)) return;
+#endif
     puts_("checks passed: every guard is as in the file, every site holds one of the two sets of bytes, and the kernel's own view of av-cam.bin equals the mapping\n");
     if (!n_todo) { puts_("NOTHING TO DO: every site already holds the target bytes (" MP_VERB ")\n"); return; }
 
@@ -2438,9 +2568,28 @@ static void mp_run(volatile u8 *av, int fd, int pm, u64 lo, u64 hi)
         else if (!mp_lm_is(lo, e, MP_TO(e))) { puts_("!! "); mp_where("lm", e); puts_(": the write is not seen in the process's memory\n"); failed = 1; }
         else { mp_where("lm", e); puts_(": written and read back\n"); }
     }
+#ifdef MP_LD
+    for (u64 i = 0; i < n_ld && !failed; i++) {               /* the data segment last; written as the code and table sites are, through /proc/self/mem */
+        const struct mp_site *e = &mp_ld[i];
+        if (mp_do_ld[i] != 1) continue;
+        mp_do_ld[i] = 2;
+        if (!mp_lm_put(pm, lo, e, MP_TO(e))) { puts_("!! "); mp_where("ld", e); puts_(": the write through /proc/self/mem failed\n"); failed = 1; }
+        else if (!mp_lm_is(lo, e, MP_TO(e))) { puts_("!! "); mp_where("ld", e); puts_(": the write is not seen in the process's memory\n"); failed = 1; }
+        else { mp_where("ld", e); puts_(": written and read back\n"); }
+    }
+#endif
     if (!failed) { puts_("DONE: every site holds the target bytes (" MP_VERB ")\n"); return; }
 
     /* Something failed: put back every site this run touched, libmpr.so first, and say what each holds afterwards. */
+#ifdef MP_LD
+    for (u64 i = 0; i < n_ld; i++) {                           /* the data segment first: the reverse of the writes */
+        const struct mp_site *e = &mp_ld[i];
+        if (mp_do_ld[i] != 2) continue;
+        mp_lm_put(pm, lo, e, MP_FROM(e));
+        if (mp_lm_is(lo, e, MP_FROM(e))) { puts_("undo "); mp_where("ld", e); puts_(": put back\n"); }
+        else { puts_("!! undo "); mp_where("ld", e); puts_(": NOT put back\n"); undo_bad = 1; }
+    }
+#endif
 #ifdef MP_LM_ORDERED                       /* an undo runs opposite to the writes: branches out before the code they point at */
     for (u64 k = 0; k < n_lm; k++) {
         u64 i = LEVEL == 19 ? n_lm - 1 - k : k;
@@ -3009,6 +3158,137 @@ static void level31(void)
 }
 #endif
 
+/* ------------------------------------------------------------------ level 32: the hand-off fixture, written into DRAM (picture slot 0) */
+
+/* With vcd12_ho5_v1 / vcd12_ho2_v1 applied, the input front end of a CD-mode-2 channel (XAVC S-I HD with ebccd2si_v1) writes picture slot 1
+ * of block 0x664, while the encoder core still reads slot 0 (F1021, build/build_vcd12.py). This level puts a known picture into slot 0:
+ * the fixture of a design (gen_expected.py --fixture <name>, handoff_fixture.py), built record by record in the mode-2 layout from a
+ * 17 x 30 tile table. Before anything is written, the head of slot 1's Y and C (16 KB each) must hold the front end's picture: every
+ * spare bit zero and at least 8 distinct sample values; otherwise nothing is written. /dev/mem is opened read-write with O_SYNC, so a
+ * mapping is uncached and each store reaches DRAM, where the codec's DMA reads it. Mapped for writing: exactly the pages of the two planes,
+ * nothing else; each plane is read back and its FNV-1a sum compared with the design's. No register, no other file. */
+#if LEVEL == 32
+#ifndef FIX_H
+#error "level 32 needs -DFIX_H=\"expected_fix_<name>.h\" (gen_expected.py --fixture <name>)"
+#endif
+#include FIX_H                             /* FIX_DESIGN, FIX_Y_PHYS, FIX_C_PHYS, FIX_PLANE, FIX_GY_PHYS, FIX_GC_PHYS, FIX_GLEN, FIX_SUM_Y, FIX_SUM_C, fix_val, fix_spare */
+#define X_RW_SYNC  (2 | 0x101000)          /* O_RDWR | O_SYNC */
+#define X_DRAM_LO  0x400000000UL
+#define X_DRAM_HI  0x500000000UL
+_Static_assert(FIX_PLANE == 1920UL * 1088UL * 2UL, "one 1920 x 1088 plane of 2-byte samples");
+_Static_assert((FIX_Y_PHYS & 31) == 0 && (FIX_C_PHYS & 31) == 0 && (FIX_GY_PHYS & 31) == 0 && (FIX_GC_PHYS & 31) == 0 && (FIX_GLEN & 31) == 0, "records are 32 bytes");
+_Static_assert(FIX_Y_PHYS + FIX_PLANE <= FIX_GY_PHYS && FIX_C_PHYS + FIX_PLANE <= FIX_GC_PHYS && FIX_Y_PHYS + FIX_PLANE <= FIX_C_PHYS, "the planes do not reach the guards or each other");
+_Static_assert(FIX_ROWS == 17 && FIX_COLS == 30, "the fixture is 17 x 30 tiles of 64 x 64");
+
+static void x_x64(u64 v) { u8 b[8]; for (int i = 0; i < 8; i++) b[i] = (u8)(v >> (8 * (7 - i))); puts_("0x"); puthex(b, 8); }
+
+static int x_in_dram(u64 a, u64 n) { return a >= X_DRAM_LO && a < X_DRAM_HI && n <= X_DRAM_HI - a && n; }
+
+/* The four 64-bit words of record r of a plane (16 samples of one stored row): the low bytes, then the high bytes (bits 9..8 of the value
+ * in bits 7..6, the spare bits in 5..0). Y: one value for the whole record; C: words alternate Cb, Cr. */
+static void x_record(u64 r, int chroma, u64 *w)
+{
+    u64 tile = r >> 6, s = r & 63, b = s >> 2, rr = s & 3;
+    u64 trow = tile / 30, tcol = tile % 30, flip = trow & 1;
+    u64 bx = (b & 1) | ((((b >> 2) ^ flip) & 1) << 1);
+    u64 by = ((b >> 3) & 1) | ((((b >> 1) ^ (b >> 2)) & 1) << 1);
+    u64 x0 = tcol * 64 + bx * 16, y = trow * 16 + by * 4 + rr;
+    u64 fr = y / 64, fc = x0 / 64;
+    if (fr > FIX_ROWS - 1) fr = FIX_ROWS - 1;
+    if (!chroma) {
+        u64 v = fix_val[fr][fc][0], sp = fix_spare[fr][fc][0];
+        u64 lo = (v & 0xFF) * 0x0101010101010101UL, hi = (((v >> 8) & 3) << 6 | sp) * 0x0101010101010101UL;
+        w[0] = lo; w[1] = lo; w[2] = hi; w[3] = hi;
+    } else {
+        u64 vb = fix_val[fr][fc][1], vr = fix_val[fr][fc][2], sb = fix_spare[fr][fc][1], sr = fix_spare[fr][fc][2];
+        u64 lo = ((vb & 0xFF) | (vr & 0xFF) << 8) * 0x0001000100010001UL;
+        u64 hi = ((((vb >> 8) & 3) << 6 | sb) | (((vr >> 8) & 3) << 6 | sr) << 8) * 0x0001000100010001UL;
+        w[0] = lo; w[1] = lo; w[2] = hi; w[3] = hi;
+    }
+}
+
+/* A read-only look at n bytes of mode-2 records: samples whose spare bits are set, distinct 10-bit values, the first 32 bytes.
+ * Returns -1 if the mapping fails, else 1 when it is the front end's picture (no spare bit, at least 8 values). */
+static int x_look(int fd, u64 phys, u64 n, const char *what)
+{
+    u64 page = phys & ~0xFFFUL, lead = phys - page, maplen = (lead + n + 0xFFFUL) & ~0xFFFUL;
+    puts_(what); puts_(" phys "); x_x64(phys); puts_(" "); putnum((i64)n); puts_(" bytes: ");
+    i64 m = sys_mmap_ro(fd, maplen, page);
+    if (m == -1) { puts_("!! mmap failed\n"); return -1; }
+    const volatile u64 *p = (const volatile u64 *)(m + (i64)lead);
+    u64 seen[16] = { 0 }, spare = 0, head[4];
+    for (u64 r = 0; r < n / 32; r++) {
+        u64 lo0 = p[4 * r], lo1 = p[4 * r + 1], hi0 = p[4 * r + 2], hi1 = p[4 * r + 3];
+        if (r == 0) { head[0] = lo0; head[1] = lo1; head[2] = hi0; head[3] = hi1; }
+        for (int j = 0; j < 16; j++) {
+            u64 lo = (j < 8 ? lo0 >> (8 * j) : lo1 >> (8 * (j - 8))) & 0xFF, hi = (j < 8 ? hi0 >> (8 * j) : hi1 >> (8 * (j - 8))) & 0xFF;
+            if (hi & 0x3F) spare++;
+            u64 v = lo | (hi >> 6) << 8;
+            seen[v >> 6] |= 1UL << (v & 63);
+        }
+    }
+    sys_munmap((void *)m, maplen);
+    u64 distinct = 0;
+    for (int k = 0; k < 16; k++) { u64 x = seen[k]; while (x) { x &= x - 1; distinct++; } }
+    putnum((i64)(n / 2)); puts_(" samples, spare bits set in "); putnum((i64)spare); puts_(", "); putnum((i64)distinct); puts_(" distinct values; first 32 bytes ");
+    u8 hb[32];
+    for (int k = 0; k < 4; k++) for (int i = 0; i < 8; i++) hb[8 * k + i] = (u8)(head[k] >> (8 * i));
+    puthex(hb, 32); puts_("\n");
+    return !spare && distinct >= 8;
+}
+
+/* Write one plane through a read-write mapping of exactly its pages, then read it back through the same mapping into the sum. */
+static int x_plane(int fd, u64 phys, int chroma, u64 want, const char *what)
+{
+    u64 page = phys & ~0xFFFUL, lead = phys - page, maplen = (lead + FIX_PLANE + 0xFFFUL) & ~0xFFFUL;
+    puts_("write "); puts_(what); puts_(" phys "); x_x64(phys); puts_(" "); putnum((i64)FIX_PLANE); puts_(" bytes");
+    i64 m = sys_mmap_rw(fd, maplen, page);
+    if (m == -1) { puts_(": !! mmap failed, nothing written\n"); return -1; }
+    volatile u64 *p = (volatile u64 *)(m + (i64)lead);
+    u64 w[4];
+    for (u64 r = 0; r < FIX_PLANE / 32; r++) {
+        x_record(r, chroma, w);
+        p[4 * r] = w[0]; p[4 * r + 1] = w[1]; p[4 * r + 2] = w[2]; p[4 * r + 3] = w[3];
+    }
+    __asm__ volatile("dsb sy" : : : "memory");
+    u64 h = 0xCBF29CE484222325UL;
+    for (u64 k = 0; k < FIX_PLANE / 8; k++) { h ^= p[k]; h *= 0x100000001B3UL; }
+    sys_munmap((void *)m, maplen);
+    puts_(", read back: sum "); x_x64(h); puts_(h == want ? " as expected\n" : " DIFFERS from the expected ");
+    if (h != want) { x_x64(want); puts_("\n"); }
+    return h == want;
+}
+
+static void level32(void)
+{
+    puts_("== level 32: the hand-off fixture into picture slot 0 (" FIX_DESIGN ")\n");
+    if (!x_in_dram(FIX_Y_PHYS, FIX_PLANE) || !x_in_dram(FIX_C_PHYS, FIX_PLANE) || !x_in_dram(FIX_GY_PHYS, FIX_GLEN) || !x_in_dram(FIX_GC_PHYS, FIX_GLEN)) {
+        puts_("!! an address of the design is not DRAM\n== level 32 verdict: REFUSED: nothing written\n");
+        return;
+    }
+    i64 fd = sys_open(TEST_ROOT "/dev/mem", X_RW_SYNC, 0);
+    if (fd < 0) { puts_("!! /dev/mem open failed "); putnum(fd); puts_("\n== level 32 verdict: REFUSED: nothing written\n"); return; }
+    int gy = x_look((int)fd, FIX_GY_PHYS, FIX_GLEN, "guard: slot 1 Y head");
+    int gc = x_look((int)fd, FIX_GC_PHYS, FIX_GLEN, "guard: slot 1 C head");
+    x_look((int)fd, FIX_Y_PHYS, FIX_GLEN, "before: slot 0 Y head");
+    x_look((int)fd, FIX_C_PHYS, FIX_GLEN, "before: slot 0 C head");
+    if (gy != 1 || gc != 1) {
+        sys_close((int)fd);
+        puts_("== level 32 verdict: REFUSED: picture slot 1 does not hold the front end's picture (hand-off not in force, or the S-I HD channel has not run); nothing written\n");
+        return;
+    }
+    int y = x_plane((int)fd, FIX_Y_PHYS, 0, FIX_SUM_Y, "Y plane");
+    int c = y >= 0 ? x_plane((int)fd, FIX_C_PHYS, 1, FIX_SUM_C, "C plane") : -1;
+    x_look((int)fd, FIX_Y_PHYS, FIX_GLEN, "after: slot 0 Y head");
+    x_look((int)fd, FIX_C_PHYS, FIX_GLEN, "after: slot 0 C head");
+    sys_close((int)fd);
+    if (y == 1 && c == 1) puts_("== level 32 verdict: WRITTEN: picture slot 0 holds the fixture (both sums as expected)\n");
+    else if (y < 0) puts_("== level 32 verdict: NOT WRITTEN: the Y plane could not be mapped\n");
+    else if (c < 0) puts_("== level 32 verdict: PARTLY WRITTEN: the Y plane only (the C plane could not be mapped)\n");
+    else puts_("== level 32 verdict: WRITTEN BUT A SUM DIFFERS: see the lines above\n");
+}
+#endif
+
 /* ------------------------------------------------------------------ entry */
 
 static void run(void)
@@ -3045,7 +3325,7 @@ static void run(void)
 #if LEVEL == 13 || LEVEL == 14
     level13();
 #endif
-#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28
+#if LEVEL == 15 || LEVEL == 21 || LEVEL == 28 || LEVEL == 33
     level15();
 #endif
 #if LEVEL == 16 || LEVEL == 17
@@ -3077,6 +3357,9 @@ static void run(void)
 #endif
 #if LEVEL == 31
     level31();
+#endif
+#if LEVEL == 32
+    level32();
 #endif
     puts_("== done, bytes written before this line: "); putnum((i64)out_total); puts_("\n");
     if (out_fd >= 0) sys_close(out_fd);

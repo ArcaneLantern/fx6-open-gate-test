@@ -52,7 +52,7 @@ WRITE_STEPS = {
     # D16 = the ten words a tester ran on an FX6 (repo issue 2, Mininoob). R16 = a variant that retags the HD layout's plane instead of
     # enlarging it (no refused request in the FX6's own allocator; not run). D17 puts back the words of either.
     "D16": ("libJit_fx6_D16.so", "32a2bbc5125603c9beaa56614f48d0d928074dd603fbc3dade0ce486e60cda79", "apply the output-plane memory words dmm7slot_fx6_v1 (ten words of the DmmCfg table: seven 4K planes of 14,745,600 bytes, the eighth out of the pool, the HD layout's plane enlarged; the words a tester ran on an FX6)"),
-    "R16": ("libJit_fx6_R16.so", "28f182217719eef43ef0abffcd3c97ec632570657a8ef060fb46c9e72a6a3f29", "apply the output-plane memory words, variant dmm7slot_fx6_v2 (ten words: seven 4K planes of 14,745,600 bytes, the eighth and the HD layout's plane out of the pool; NOT run on a camera)"),
+    "R16": ("libJit_fx6_R16.so", "28f182217719eef43ef0abffcd3c97ec632570657a8ef060fb46c9e72a6a3f29", "apply the output-plane memory words, variant dmm7slot_fx6_v2 (ten words: seven 4K planes of 14,745,600 bytes, the eighth and the HD layout's plane out of the pool; ran once, XAVC-L: E95-311, crash on REC)"),
     "D17": ("libJit_fx6_D17.so", "762ca5ac5a6eadc7b143924d99e8566635e30188e8547a76919bf4b0e583cef7", "put back the output-plane memory words (dmm7slot_fx6_v1 or _v2)"),
     "L5": ("libJit_fx6_L5.so", "5ed7dfb6d44d4f1fd3c750fde5302ac3f34aac0c433d1fc2ca5a86251a6047c5", "apply the sensor-side design ogsq_fx6_v1 (sensor cells, two records, the stored record; the FX3's working ogsq_fx3_v1)"),
     "L6": ("libJit_fx6_L6.so", "102864a6a5538be16c22f54edd5aa7c42b674032bef5d488fa4578716db07d7e", "put back the sensor-side design ogsq_fx6_v1"),

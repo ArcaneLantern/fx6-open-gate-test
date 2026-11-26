@@ -8,9 +8,10 @@ Observed = read in the firmware or seen in emulation. Inferred = a reading of wh
 
 | | Tester 1 (issue 1, macOS, XAVC-L 4:2:0 8-bit) | Tester 2 (issue 2, XAVC-I) |
 |---|---|---|
-| Sensor step alone | works: sensor on register column 1, drive mode 0x8c0, a clip is written (full height squeezed into 3840 × 2160, with a black band of about 210 rows at the top) | picture black, `E95-311`, beeps, blinking lamp; the picture came back after the next step |
+| Sensor step alone | sensor on register column 1, drive mode 0x8c0; clips written (full height squeezed into 3840 × 2160; one take with a black band of about 210 rows at the top, a later one clean), then **`E95-311` after about 10 s of recording** | picture black, `E95-311`, beeps, blinking lamp; the picture came back after the next step |
 | + output size, no memory step | no clip written; USB and thumbnail mode locked until a battery pull | a 3840 × 2560 clip whose rows 2304–2559 repeat rows 0–255 |
-| + the memory step (first) | not run | **clean 3840 × 2560, 23.98p, every row real picture; MXF header 3840 × 2560, 3:2** |
+| + the memory step (first) | variant `_v2` (R16), then L5, L19, L16, XAVC-L 4:2:0 8-bit: every step DONE, no error after L5; `E95-311` after the last step; **REC crashed the camera, no clip** | `_v1` (D16): **clean 3840 × 2560, 23.98p, every row real picture; MXF header 3840 × 2560, 3:2** |
+| Sensor step without its four timing words (tester 1's own build) | 20 s recorded, no fault, every frame black; the sensor register shadow did not match the full-height window | not run |
 | LCD step | rapid left-right jitter | the picture split into three horizontal sections |
 
 What follows from them:
@@ -19,7 +20,9 @@ What follows from them:
 - **The first kit's order was wrong for the FX6.** It put the output size in second, before the encoder step and with buffers too small for it. The order is now memory, sensor, encoder, output size, which is the order that ran in issue 2 (there with the LCD step before the output size).
 - **The MXF header fix works** on a real clip: StoredHeight / SampledHeight / DisplayHeight 2560, AspectRatio 3/2 (read from tester 2's file).
 - **The LCD step does not work** on the FX6 as built. It is now only applied on request.
-- **E95-311 is not explained.** Sony's E95 class is an operation fault of a processor or bus. The firmware only formats the code (`E%02X-%03X`, appFw's caution module); what raises 95/311 was not found. It appeared for tester 2 (XAVC-I, memory step applied before) and not for tester 1 (XAVC-L, no memory step). Either difference could be the cause. The memory step is a candidate: see "one refused request" below.
+- **E95-311 comes with the sensor step** (on a camera). Tester 1 got it with the sensor step alone and no memory step, so the memory step is not the cause, and the memory variant did not avoid it. When it appears differs: at once (tester 2), after ~10 s of recording (tester 1, sensor step alone), after the last step (tester 1, full apply). Tester 1's build without the four timing words recorded without a fault, but the sensor then did not run full height (black frames), so it does not separate "timing" from "full height".
+- **The FX6 never runs the full-height sensor mode itself** (observed). Register column 1 (sensor mode 0x01) is used by one drive mode only, 0xe011, a stills mode; the FX6 has no stills. On the FX3 and A7S III that mode runs whenever the camera is in stills, so the hardware around the sensor is exercised there. On the FX6 it is not. Inferred: E95-311 is the FX6's own check on something in that path. Which check is not known.
+- **Where E95-311 comes from (observed, incomplete).** appFw's caution module (`procam/caution/caution_module.cpp`) prints `E%02X-%03X` from one 20-bit number (0x95311: class = bits 12–19, code = bits 0–11), read from a table the program builds at run time (in .bss), so the number is not in any file. No coprocessor code was found that sends 0x95 / 0x311. The coprocessor's log pages in the dumps hold boot lines only, and the camera's `/log` files are boot logs: neither recorded the event.
 - The black band tester 1 saw with the sensor step alone is not explained either. Tester 2's final clips have real picture from the first row.
 
 ## The USB route (observed)
@@ -85,7 +88,7 @@ Layout 0x28 then totals 103,223,296 bytes and fits. Layout 0x26 totals 107,642,8
 | the nine words of layout 0x28 alone | the 13,271,040-byte unit of layout 0x26 is handed out first, among the big ones. Not shipped: one picture per cycle would overrun |
 | `_v2`: the nine words + layout 0x26's unit retagged (0x2141ca8: key 0x3f1 → 0x7fd) | 14 units of 14,745,600, **no refusal**, no layout over its block |
 
-So the tenth word is what keeps a small unit out of the pool, at the price of a refusal. The tester's camera ran with it. Whether that refusal is what shows as E95-311 after the sensor step is not known; `_v2` is offered as a test for exactly that (`open_gate_apply_alt_memory.cmd`). **`_v2` has not run on a camera.**
+So the tenth word is what keeps a small unit out of the pool, at the price of a refusal. Tester 2's camera ran with it and recorded. `_v2` was built to test whether that refusal is E95-311; it ran once (tester 1, XAVC-L): every step DONE, E95-311 all the same, then a crash on REC (see the table above). E95-311 also appears with no memory step at all, so `_v1` stays the default.
 
 **How it is written.** The other kits' memory level refuses to write while the units are in use, which on an FX6 is always (no stills mode). So this step uses the word-writing level the output size and LCD steps use (16/17), as the tester did: D16 (`_v1`), R16 (`_v2`), and one put back D17 that holds the words of both. 23 guards from the file: the rest of every touched record, the end markers around layout 0x28, and the three parent records. On the tester's camera the words counted from the picture restart at the end of the USB session.
 
@@ -191,9 +194,9 @@ Not changed: Sony's XML (NonRealTimeMeta, inside the file and the M01.XML sideca
 
 ## Not known yet
 
-- What raises E95-311 after the sensor step, and whether the memory variant avoids it.
+- What raises E95-311 (it comes with the sensor step's full-height state; the memory variant does not avoid it), and whether it matters for recording (XAVC-I recorded through it on one camera).
 - Why the LCD step breaks the preview, and how to show 3:2 on the FX6's LCD.
-- XAVC-L with the memory step (14 output units instead of 17; long-GOP may want more than intra does).
+- Why XAVC-L crashed on REC (one run, with `_v2` and E95-311 already showing): the codec at 2560 rows, 14 output units for long-GOP, the variant, or that camera. A run of XAVC-I with `_v1` on tester 1's camera would separate them.
 - The apply's exact order without the LCD step (the run in issue 2 had the LCD step between the encoder and the output size).
 - Why the sensor step alone gave tester 1 a black band at the top of the squeezed picture.
 - Whether the power switch removes the patch (it does on the A7S III).

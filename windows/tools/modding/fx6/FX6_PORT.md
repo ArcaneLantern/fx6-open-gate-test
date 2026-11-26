@@ -7,9 +7,49 @@ Android kits and the debug dump for testers; repo `A7iv Firmware\fx6-open-gate-t
 sides for a 3:2 picture are fine.
 **Reference: the FX3 kit** (open gate works on two FX3s, 2026-11-24; [[fx3-open-gate-port]]), itself the A7S III's proven v5 kit.
 Companion notes: `FX6_PORT_ENCODER.md` (encoder side and file headers), `FX6_PORT_SCREEN.md` (the LCD step).
-NOTHING HAS RUN ON AN FX6.
+~~NOTHING HAS RUN ON AN FX6.~~ Two FX6s ran the first kit on 2026-11-25/26 (repo issues 1 and 2): see the next block.
 
-**State 2026-11-26: built, emulated, published to `fx6-open-gate-test` (not git-initialised, not committed).** Steps: apply = L5 `ogsq_fx6_v1`,
+**SECOND KIT, 2026-11-26 (after the testers' first runs; the owner: "look why his suggestions fixed his version, and integrate ... fix open
+gate properly"). Published to `fx6-open-gate-test` with APK 0.2; not committed by me, not run.**
+- **What the testers showed.** Tester 1 (issue 1, macOS, XAVC-L): L5 alone works (column 1, 0x8c0, a clip; a ~210-row black band at the top
+  of the squeezed picture, not explained); + L16 = no clip, USB locked. Tester 2 (issue 2, Mininoob, XAVC-I): first kit recorded 3840x2560 with
+  rows 2304-2559 repeating rows 0-255; with their own ten-word memory step first, **clean 3840x2560** (I decoded 72 consecutive frames of
+  THICCFX6-0143.MXF: no bad frame; its MXF descriptor reads 3840x2560 3/2, so header fix v2 works on a camera). Left over: `E95-311` after L5
+  (picture black, beeps, lamp; back after the next step; code latched), and S16 scrambles the LCD on both cameras.
+- **Cause.** The FX6 fills an output unit (id 0x2d9, key 0x3f1, 13,271,040 bytes, the same unit as every other body) at 1.5 bytes/pixel: 3840x2304.
+  The A7 IV / A7S III / FX3 use 1.25 (12,288,000 for 2560 rows), which is why the FX3 kit has no memory step and I never checked. **The FX2 / FX30 /
+  A1 II ports each had a DMM size check; this port skipped it.**
+- **Memory step** (`build/build_dmm_fx6.py`; `parse_dmmcfg.RAM["fx6_602"]`, `emu_dmm_server` fx6_602 explicit entry; evidence
+  `evidence/fx6/dmm7slot_fx6_emu.json`, the tester's table pages in `evidence/fx6/issue2`): unit records at RAM 0x213ef64..0x2144900 = the file,
+  1,147 records (tester's stock dump). Layout 0x26 = 28 x key 0x3f6 + 1 x 0x3f1 (limit 1), layout 0x28 = 8 x 0x3f1 (limit 2), parent key 0x39
+  106,954,752 x 3. The FX6 reader's key limit is **0x800** (A7 IV 0x900): 0x8fe is fatal here, the tester's 0x7fd is fine.
+  - `dmm7slot_fx6_v1` = the tester's ten words (D16). In the FX6's own allocator: after a full release ONE REFUSED REQUEST (0x26 tried first,
+    over its block by 688,128), then 14 x 14,745,600. The tenth word (0x2141cac) is what keeps 0x26's small unit out of the pool.
+  - `dmm7slot_fx6_v2` (R16, `--alt-memory`, NOT RUN): 0x2141ca8 key -> 0x7fd instead; no refusal, nothing over its block, 14 units.
+  - The nine 0x28 words alone hand out 0x26's 13,271,040 unit first: NOT shipped (the owner chose "ship both" when the variant was still the
+    nine-word idea; the emulation then showed that idea is worse, so the variant became the retag).
+  - `dmm7slot_fx6_back` = the 11 words of both, for D17 (level 17 skips a site that is already stock).
+  - Level 13 (other kits' DMM engine) refuses while units are in use = always on an FX6, so D16/R16/D17 are level 16/17 word libraries.
+- **Order**: apply D16, L5, L19, L16 (+ S16 only with `--screen`); putback S17, L17, L20, L6, D17 (`--no-screen` drops S17). The first kit's
+  L5, L16, L19 put the output size in before its units and its encoder: that is issue 1's "no clip".
+- **E95-311: NOT explained.** appFw only formats it (`E%02X-%03X`, procam/caution/caution_module.cpp); no raise site found by constant
+  search. Tester 1's kprint pages hold boot lines only (no run-time log there). Hypothesis to test: v1's refused request at the first full
+  re-allocation (the sensor-mode change) -> R16. Other candidate: XAVC-I vs XAVC-L. The dump now copies `/log/cp/*` (8 KB each).
+- **LCD: NOT explained.** Tester 1's dump after S16 shows the 8 words as designed and panel type 1; preview jitters / splits in three. The
+  emulation covers the rectangle only. S16 is opt-in.
+- **Also**: `fx6read_v2` (11 dmm sites hard, 7 table pages, /log/cp); the report decodes the table (both layouts, fit) and no longer lists
+  the benign `read failed -21` / `truncated` lines; `kit.json` panel-table text fixed (u32 words ff000000 01000000 00000000 02000000);
+  `fx6_run.py` got the FX3 runner's leftover-library handling (`KNOWN_LIBS`, `--remove-library`); apply needs a check made with fx6read_v2;
+  publisher prints which macOS files are not 100755 in git (issue 1: run.sh).
+- **Pins**: check 644b463c, dump 6bfc25e9, D16 32a2bbc5, R16 28f18221, D17 762ca5ac; L5/L6/L16/L17/L19/L20/N19/S16/S17 unchanged (rebuilt,
+  same hashes: readcheck.c untouched). APK 0.2 8a79e588.
+- **Checks that pass**: build_dmm_fx6 (asserts incl. the two dumps), emu_dmm_server --selfcheck fx6_602, emu_fx6 (20 cases + 3 foreign),
+  emu_fx6_write (all, incl. 31 new memory-step cases and the ZV-E1 / FX2 L13 libraries writing nothing), 14 `--selftest`, the dry runs, the
+  publisher's checks, the app harness (7).
+- **Proposed, not built**: one-connection apply (all steps in one USB session: `adj_cmd_set_file2` loads and closes the library per write, so
+  several can run in one session; needs `ct6_level1_run.py`, shared by every kit).
+
+**State of the FIRST kit, 2026-11-26: built, emulated, published to `fx6-open-gate-test`.** Steps: apply = L5 `ogsq_fx6_v1`,
 L16 `outsz2560_fx6_v1`, L19 `ogfile2560_xavc_fx6_v2`, S16 `lcd32_fx6_v1`, then the read-only debug dump; putback = S17, L20, L17, L6;
 `--no-meta` = N19 (`ogfile2560_xavc_fx6_v1`).
 - **Encoder** (`FX6_PORT_ENCODER.md`): XAVC-I QFHD and XAVC-L QFHD 4:2:0 8-bit at 23.98p/25p, 49 data sites (2 libmpr comb heights, 12
@@ -37,6 +77,9 @@ L16 `outsz2560_fx6_v1`, L19 `ogfile2560_xavc_fx6_v2`, S16 `lcd32_fx6_v1`, then t
 2. `C:\Python313\python.exe -B build\emu_drvparam.py fx6_602 --json evidence\fx6\drvparam_stock_fx6_602.json` (CONSTS entry fx6_602)
 3. `C:\Python313\python.exe -B build\build_og_fx6.py` -> `ogsq_fx6_v1` + `evidence\fx6\ogsq_fx6_v1_checks.json`
 4. `C:\Python313\python.exe -B build\build_ram_words_fx6.py` -> `outsz2560_fx6_v1` (emu_size_table entry fx6_602)
+4b. memory (second kit): `C:\Python313\python.exe -B build\emu_dmm_server.py --build fx6_602 --selfcheck`, then
+   `C:\Python313\python.exe -B build\build_dmm_fx6.py` -> `dmm7slot_fx6_v1` / `_v2` / `_back` + `evidence\fx6\dmm7slot_fx6_emu.json`
+   (it also checks the tester's two table dumps in `evidence\fx6\issue2`)
 5. encoder: see `FX6_PORT_ENCODER.md`; screen: `work\venv\Scripts\python.exe -I -B build\build_lcd_fx6.py`, `C:\Python313\python.exe -B build\emu_lcd_fx6.py --save`
 6. `camera_tests\CT6_memory_read_check\helper_fx6`: edit `kit.json` when a design changes; `work\venv\Scripts\python.exe -I -B gen_fx6.py`,
    `bash build_fx6.sh check|dump <out>`, `C:\Python313\python.exe -B emu_fx6.py`; `work\venv\Scripts\python.exe -I -B gen_fx6_write.py`,

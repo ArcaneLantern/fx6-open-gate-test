@@ -1,8 +1,8 @@
 # FX6 open gate: test kit (firmware 6.02)
 
-<p><b>Open gate records on an FX6.</b> With the memory step a tester found, an FX6 on firmware 6.02 recorded clean 3840 × 2560 XAVC-I clips of the whole sensor area at 23.98p (issue 2, 2026-11-26). This kit is the FX3 open-gate kit ported to the Sony FX6 (ILME-FX6). The patch only writes to the camera's memory. Two things are not right yet: an error code that can appear while applying, and the LCD step.</p>
+<p><b>Open gate records on an FX6.</b> With the memory step a tester found, an FX6 on firmware 6.02 recorded clean 3840 × 2560 XAVC-I clips of the whole sensor area at 23.98p (issue 2, 2026-11-26). This kit is the FX3 open-gate kit ported to the Sony FX6 (ILME-FX6). The patch only writes to the camera's memory. Not right yet: an error code (E95-311) that comes with the sensor step, XAVC-L, and the LCD step.</p>
 
-**Where it stands (2026-11-26, second kit):**
+**Where it stands (2026-11-26, second kit; updated after the alt-memory run in issue 1):**
 
 - **What two testers showed** (issues 1 and 2):
   - The sensor step works: the sensor runs its full height.
@@ -10,21 +10,26 @@
   - With the memory step first, XAVC-I QFHD 23.98p recorded 3840 × 2560 with real picture in every row, and the MXF header says 3840 × 2560, 3:2.
 - **The order changed.** The first kit applied the output size before its buffers and its encoder were ready. Now: memory, sensor, encoder, output size.
 - **The LCD step is off by default.** On both cameras it gave a broken preview (jitter; the picture in three sections). Without it the LCD shows the whole 3:2 picture stretched sideways to fill the 16:9 panel: fine for framing, wrong for shapes. The file is not stretched. `open_gate_apply_with_screen.cmd` still applies it, for testing.
-- **E95-311.** On one FX6 (XAVC-I) the picture went black after the sensor step with `E95-311`, beeps and a blinking record lamp. The picture came back after the next step and the camera recorded, but the code, the beeps and the lamp stayed until power-off. The other FX6 (XAVC-L) showed no error after the sensor step. The cause is not known. One candidate is the memory step itself: in an emulation of the FX6's own memory manager, the tester's ten words make it refuse one buffer request after everything has been released. `open_gate_apply_alt_memory.cmd` uses a variant without that refusal. **It has not run on a camera.** If you get E95-311, please try it after a battery pull and tell us.
-- **Not yet shot with the memory step:** XAVC-L, and this exact order without the LCD step.
-- **Formats:** XAVC-I QFHD and XAVC-L QFHD **4:2:0 8-bit** at **23.98p**. **Not XAVC-L 4:2:2 10-bit**: at 3840 × 2560 its encoder needs more memory than the FX6 gives it, so it is left unchanged; do not record it while the kit is applied. **Not 25p**: the sensor step changes the 23.98p video mode only.
+- **E95-311 comes with the sensor step.** It shows as `E95-311` with beeps and a blinking record lamp, and stays until power-off.
+  - Tester 2 (XAVC-I): straight after the sensor step, with a black picture until the next step. The camera then recorded clean 3840 × 2560 clips all the same.
+  - Tester 1 (XAVC-L): with the sensor step alone (no memory step, 2160-row output), a clean squeezed clip, then E95-311 after about 10 seconds of recording. With the full apply and the memory variant: after the last step.
+  - So it is not the memory step. `open_gate_apply_alt_memory.cmd` was built to test that idea and did not avoid it.
+  - The FX6's own firmware never runs the sensor's full-height mode: on the FX3 and A7S III a stills mode uses it, and the FX6 has no stills. What the FX6 checks and reports as E95-311 is not known yet.
+- **XAVC-L crashed.** Tester 1's full apply with XAVC-L 4:2:0 8-bit (memory variant): every step done, E95-311, then pressing REC crashed the camera and no clip was written. **Record XAVC-I.** Whether XAVC-L itself is the cause (rather than that camera or the variant) is not known yet.
+- **Not yet run:** this exact order with the default memory step and without the LCD step; 25p.
+- **Formats:** XAVC-I QFHD at **23.98p** (the encoder step also covers XAVC-L QFHD **4:2:0 8-bit**, which crashed once, see above). **Not XAVC-L 4:2:2 10-bit**: at 3840 × 2560 its encoder needs more memory than the FX6 gives it, so it is left unchanged; do not record it while the kit is applied. **Not 25p**: the sensor step changes the 23.98p video mode only.
 - **File headers.** The encoder step makes the MXF header's picture descriptor say 3840 × 2560 and 3:2, so editors should open the files at 3:2 (confirmed on the tester's clip). Sony's XML (in the file and the M01.XML sidecar) still says 3840 × 2160, 16:9. `open_gate_apply_no_meta.cmd` leaves the MXF header at 3840 × 2160.
 - **The debug dump.** `dump_info.cmd` (and the last session of the apply) writes a read-only report of the camera's state: the video mode it ran, the sensor registers, the scaler, the output-buffer memory table, the LCD's panel type, the camera's log files and the patch sites. Please send it with every report.
 - **A power-off probably removes the patch** (it does on the A7S III): apply it again after every power-on.
 
-**What it does.** FF, QFHD 3840 × 2160 at 23.98p in XAVC-I or XAVC-L 4:2:0 8-bit becomes a 3840 × 2560 (3:2) recording of the whole sensor height, set in the camera's memory only. A battery pull removes it.
+**What it does.** FF, QFHD 3840 × 2160 at 23.98p in XAVC-I becomes a 3840 × 2560 (3:2) recording of the whole sensor height, set in the camera's memory only. A battery pull removes it.
 
 | Launcher | What it does | Writes to the camera? |
 |---|---|---|
 | `check_readonly.cmd` | Confirms the camera runs the 6.02 software the port was made from and reads what every patch site holds. Verdict READY / NOT READY | No |
 | `dump_info.cmd` | **The debug dump:** the same, plus the memory map, the camera's own logs, sensor register state, scaler state, the output-buffer table, the video mode it last ran, and the LCD's panel type and words | No |
 | `open_gate_apply.cmd` | Applies the open-gate state in four steps (memory, sensor, encoder, output size), then takes the debug dump | **Yes: memory only** |
-| `open_gate_apply_alt_memory.cmd` | **Test.** The same with the memory step's variant. Not run on a camera. Try it if `open_gate_apply` shows E95-311 | **Yes: memory only** |
+| `open_gate_apply_alt_memory.cmd` | **Test.** The same with the memory step's variant. Ran once (XAVC-L): E95-311, then a crash on REC | **Yes: memory only** |
 | `open_gate_apply_with_screen.cmd` | **Test.** The four steps plus the LCD step, which gave a broken preview on two FX6s | **Yes: memory only** |
 | `open_gate_apply_no_meta.cmd` | The four steps with the encoder step that leaves the MXF header at 3840 × 2160, 16:9 | **Yes: memory only** |
 | `open_gate_putback.cmd` | Puts every step back (five sessions; it also removes the LCD step and either memory variant) | Yes: memory only |
@@ -35,7 +40,7 @@ Nothing in this kit writes to the camera's firmware or to its settings.
 ## Before you start
 
 1. The camera's menu (Maintenance > Version) must show **6.02**. On any other version, stop and tell us the version.
-2. **Imager Scan Mode FF**, Rec Format **3840 × 2160 (QFHD)**, frame rate **23.98p**, codec **XAVC-I** or **XAVC-L 4:2:0 8-bit** (not XAVC-L 4:2:2 10-bit). S&Q Motion off, Proxy Rec off. Other settings use video modes this kit does not change.
+2. **Imager Scan Mode FF**, Rec Format **3840 × 2160 (QFHD)**, frame rate **23.98p**, codec **XAVC-I** (XAVC-L 4:2:0 8-bit crashed on one FX6 with this kit; never XAVC-L 4:2:2 10-bit). S&Q Motion off, Proxy Rec off. Other settings use video modes this kit does not change.
 3. A charged battery or the AC adaptor. Do not record or play back while a step runs.
 4. **USB:** connect the camera to the computer with a USB cable. When the camera asks **"Connect USB Now?"**, choose **Execute** (Mass Storage). If USB Streaming or USB Tethering is on, turn it off first.
 5. If you used the first kit: pull the battery for 10 seconds first, and run `check_readonly.cmd` again. The new apply needs a check made with this kit.
@@ -89,7 +94,7 @@ What they do to the camera: they switch it to service mode, write one small prog
 
 1. **Memory** (found and first run by [@Mininoob](https://github.com/Mininoob), issue 2; 10 words). The FX6 keeps its output pictures in buffers of 13,271,040 bytes at 1.5 bytes per pixel, which is 3840 × 2304. A 2560-row picture needs 14,745,600. Eight bigger buffers do not fit their block, so seven get the bigger size and the eighth is taken out of use. The words are in the camera's working copy of its memory table, which it rebuilds from its own file at every start.
    - `open_gate_apply.cmd` writes the tester's ten words. They also enlarge the one such buffer of another layout, which then no longer fits its block; in emulation the memory manager refuses the first request that reaches it.
-   - `open_gate_apply_alt_memory.cmd` takes that buffer out of use instead. In emulation there is no refusal and no layout over its block. Not run on a camera.
+   - `open_gate_apply_alt_memory.cmd` takes that buffer out of use instead. In emulation there is no refusal and no layout over its block. It ran once (issue 1, XAVC-L): every step done, then E95-311 and a crash on REC.
 2. **Sensor** (the FX3's step): the sensor read-out and the two 4K picture records of the image processor take the full sensor height instead of the 16:9 band. Runs on both testers' cameras.
 3. **Encoder** (made for the FX6; 53 sites): the encoder request's height for XAVC-I QFHD and XAVC-L QFHD 4:2:0 8-bit (2160 → 2560), the encoder's entries for those formats with their profiles, and the label the outputs get for the recording; and in the MXF header writer, a QFHD clip's picture height (2560) and aspect ratio (3:2), with DCI 4K kept at 4096 × 2160. XAVC-L 4:2:2 10-bit, DCI 4K, HD and proxies are not touched.
 4. **Output size** (the FX3's step; one word): 3840 × 2160 becomes 3840 × 2560. It is last because it needs the buffers of step 1 and the encoder of step 3.
@@ -104,27 +109,27 @@ Each step first checks that every byte it is about to change holds its stock val
 3. Connect USB (Execute) and run `windows/check_readonly.cmd`. It must say VERDICT READY.
 4. Run `windows/open_gate_apply.cmd`. It starts only if your newest saved check or dump says READY. It asks for the firmware version and for a typed YES.
 5. It runs four steps. Between steps it asks you to **unplug and replug the USB cable** (choose Execute each time). **Do not switch the camera off and do not pull the battery** until the script says it is finished: either one removes what was applied.
-6. **After the sensor step (step 2) the picture may go black with E95-311, beeps and a blinking record lamp.** Carry on with the next step; do not pull the battery. Note that it happened and which Rec Format was set.
-7. After the four steps the script asks for one more session, which only reads: **unplug, look at the LCD for five seconds, plug in again.** It then takes the debug dump by itself and says whether the sensor ran the open-gate mode.
+6. **From the sensor step (step 2) on, E95-311 may appear** with beeps and a blinking record lamp, at once (the picture may go black until the next step) or later. Carry on with the next step; do not pull the battery. Note when it appeared and which Rec Format was set.
+7. After the four steps the script asks for one more session, which only reads: **unplug, look at the LCD for five seconds, plug in again.** **Do not press REC before this session has finished**, even if an error code is showing: on one FX6, REC then crashed the camera and no dump of the applied state could be taken. It then takes the debug dump by itself and says whether the sensor ran the open-gate mode.
 8. When it says so, unplug. The LCD shows the whole picture stretched sideways.
 9. Record 20 to 30 seconds and stop. **Do not play it back on the camera** (see below): check it on a computer.
 10. To return to stock: battery out for 10 seconds, or `open_gate_putback.cmd`.
 
 **While it is applied**
 
-- Use only **FF, QFHD 3840 × 2160, 23.98p, XAVC-I or XAVC-L 4:2:0 8-bit**. Other frame rates run video modes this kit does not change: on the A7S III 60p distorted the picture and crashed the camera, and 25p on these cameras runs a mode that shares the patched picture records without the sensor change. S35 and DCI 4K stay 16:9; S35 QFHD would come out stretched.
+- Use only **FF, QFHD 3840 × 2160, 23.98p, XAVC-I**. Other frame rates run video modes this kit does not change: on the A7S III 60p distorted the picture and crashed the camera, and 25p on these cameras runs a mode that shares the patched picture records without the sensor change. S35 and DCI 4K stay 16:9; S35 QFHD would come out stretched.
 - **Switch the camera off (battery out for 10 seconds) before using HD, DCI 4K or S&Q.** The memory step leaves 14 output buffers instead of 17 and has only been run in QFHD. With the tester's ten words one layout no longer fits its block, and the tester expects an `EA0-000` error in a mode that needs it.
 - **Do not record XAVC-L 4:2:2 10-bit** while it is applied: its encoder is still opened for 2160 rows while the picture has 2560 (on the A7 IV that stopped a recording after about a second).
 - **Do not play clips back on the camera.** On two FX3s an open-gate clip would not play and a second try froze the camera until the battery was pulled. The FX6 opens its XAVC playback decoder at 4096 × 2160 the way the FX3 does, so a 3840 × 2560 clip is expected to fail the same way.
-- If E95-311 is on the screen, the camera beeps and the lamp blinks until it is switched off. The tester's camera recorded all the same.
+- If E95-311 is on the screen, the camera beeps and the lamp blinks until it is switched off. Tester 2's camera recorded XAVC-I all the same; tester 1's crashed on REC with XAVC-L.
 - **Do not switch the camera off:** on the A7S III the power switch removes the patch. Assume it does here too.
 
 **Please send back**
 
 - The zipped `windows/camera_private` folder, with the debug dump the apply ends with (and a stock dump from before, if you took one).
-- **Whether E95-311 (or any code) appeared, after which step, and your Rec Format.** If it did: whether `open_gate_apply_alt_memory.cmd` (after a battery pull) shows it too.
+- **Whether E95-311 (or any code) appeared, when (after which step, or how long into a recording), and your Rec Format.**
 - What the LCD showed after the apply. With `open_gate_apply_with_screen`: a phone photo of the LCD, and what an SDI or HDMI monitor shows if one is connected.
-- The clip, or what MediaInfo says about it: `mediainfo --Output="Video;%Width%x%Height% original %Width_Original%x%Height_Original% %DisplayAspectRatio/String% %Format% %Format_Profile% %BitRate%" FILE` (expected: 3840x2560 with no "original" size and 3:2). Whether the picture is the whole 3:2 sensor area and clean down to the last row in every frame, whether it recorded to the end, and how your editor opens it. XAVC-L clips are the ones nobody has seen yet.
+- The clip, or what MediaInfo says about it: `mediainfo --Output="Video;%Width%x%Height% original %Width_Original%x%Height_Original% %DisplayAspectRatio/String% %Format% %Format_Profile% %BitRate%" FILE` (expected: 3840x2560 with no "original" size and 3:2). Whether the picture is the whole 3:2 sensor area and clean down to the last row in every frame, whether it recorded to the end, and how your editor opens it. 
 - Your settings: Imager Scan Mode, Rec Format (codec and quality), frame rate, NTSC/PAL area, Shooting Mode (Custom or Cine EI), base ISO.
 - **One check after a power-off** when you are done: switch the camera off and on with the power switch (no battery pull), run `check_readonly.cmd`, and include that folder. It tells us whether the power switch removes the patch on the FX6.
 

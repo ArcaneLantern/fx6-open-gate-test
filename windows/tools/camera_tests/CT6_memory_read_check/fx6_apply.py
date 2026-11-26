@@ -16,8 +16,11 @@ RUN ON TWO FX6s (2026-11-25/26, repo issues 1 and 2). What they showed, and what
 - With D16 first, then L5, L19, S16, L16, that FX6 recorded clean 3840x2560 XAVC-I 23.98p clips. The MXF header reads 3840x2560, 3:2.
 - The LCD step S16 gave a broken preview on both cameras (jitter; the picture in three sections). It is now left out unless --screen is
   given. Without it the LCD shows the 3:2 picture stretched to 16:9: usable for framing, not for judging shapes.
-- After L5 one FX6 (XAVC-I) showed E95-311, a black picture, beeps and a blinking record lamp; the picture came back after the next
-  step, the code stayed on the screen. The other (XAVC-L) showed no error after L5. The cause is not known.
+- E95-311 (beeps, blinking record lamp; latched until power-off) comes with the SENSOR step, not the memory step: one FX6 showed it
+  straight after L5 (picture black until the next step), the other after ~10 s of recording with L5 alone (no memory step at all), and
+  again after the full apply with the memory variant R16 (2026-11-26, issue 1). Its source is not known. The FX6's own firmware never
+  runs the sensor's full-height mode (only the stills mode 0xe011 uses it, and the FX6 has no stills), so this state is new to it.
+- XAVC-L: with the full apply (R16) one FX6 crashed on REC and wrote no clip. Only XAVC-I has recorded with the memory step.
 
   apply    four steps, each its own USB session:
              D16  output-plane memory (dmm7slot_fx6_v1; --alt-memory: R16, dmm7slot_fx6_v2, a variant that has not run on a camera)
@@ -60,13 +63,13 @@ FIRMWARE = fx6_run.FIRMWARE
 # The order is the one that ran on an FX6 (repo issue 2): memory first, the output size last. The earlier order (L5, L16, L19) put the
 # output size in before its planes and its encoder, which is what stopped clips being written in issue 1. The put back is the mirror.
 STEPS = {"apply": ("D16", "L5", "L19", "L16"), "putback": ("L17", "L20", "L6", "D17"), "screen": ("S16",), "screen-putback": ("S17",)}
-E95 = ("On one FX6 (recording XAVC-I) the picture went BLACK after this step, with E95-311 on the screen, beeps and a blinking record lamp.",
-       "The picture came back after the next step; the code stayed on the screen. Another FX6 (XAVC-L) showed nothing of the kind.",
-       "If you see it: carry on with the next step. Do NOT pull the battery. Please note whether it happened and which Rec Format was set.")
+E95 = ("This step puts the sensor in its full-height mode. On FX6s that has brought up E95-311 (beeps, blinking record lamp, the code stays",
+       "until power-off): on one camera at once (picture black until the next step), on another only after the last step or ~10 s into a recording.",
+       "If you see it: carry on with the next step. Do NOT pull the battery. Please note when it appeared and which Rec Format was set.")
 RUNNER = HERE / "fx6_run.py"
 LISTER = HERE.parent / "CT1_usb_first_contact" / "ct1_stage2_service.py"
 SHOOT = ("the normal shooting screen (not playback, not a menu), Imager Scan Mode FF, Rec Format 3840x2160 (QFHD) at 23.98p "
-         "in XAVC-I or XAVC-L 4:2:0 8-bit (NOT XAVC-L 4:2:2 10-bit), S&Q Motion off, Proxy Rec off")
+         "in XAVC-I (XAVC-L crashed on one FX6 with this kit; never XAVC-L 4:2:2 10-bit), S&Q Motion off, Proxy Rec off")
 USB = "connect the USB cable to this computer and, when the camera asks 'Connect USB Now?', choose Execute (Mass Storage)"
 
 
@@ -162,6 +165,7 @@ def movie_session():
     say(">>> 2. Look at the LCD for five seconds (and point it at something with straight lines): what does it show?")
     say("       Write it down: the whole picture stretched sideways to fill the LCD (expected without the screen step) / the whole picture")
     say("       at 3:2 with black bars left and right (the screen step) / jitter, bands or anything else wrong / an error code (which one?).")
+    say("       Do NOT press REC yet, even if an error code is showing: on one FX6 REC then crashed the camera before its dump was taken.")
     say(">>> 3. Plug the USB cable in again and choose Execute when the camera asks 'Connect USB Now?'.")
     say(">>> Do NOT switch the camera off: on the A7S III the power switch removed the patch.")
     say("Waiting for the unplug and the replug (Ctrl+C to stop; the patch stays applied either way) ...")
@@ -203,7 +207,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="show the steps and what each would send; nothing is sent")
     ap.add_argument("--screen", action="store_true", help="with apply: add the screen step S16 (it gave a broken preview on two FX6s; for testing)")
     ap.add_argument("--no-screen", action="store_true", help="with putback: leave out S17 (with apply it is the default and changes nothing)")
-    ap.add_argument("--alt-memory", action="store_true", help="with apply: the memory step's variant R16 (dmm7slot_fx6_v2: no refused request in the allocator; not run on a camera) instead of D16")
+    ap.add_argument("--alt-memory", action="store_true", help="with apply: the memory step's variant R16 (dmm7slot_fx6_v2: no refused request in the allocator) instead of D16. Ran once (XAVC-L): E95-311 and a crash on REC")
     ap.add_argument("--no-movie-session", action="store_true", help="with apply or screen: leave out the closing read-only session (the debug dump)")
     ap.add_argument("--no-meta", action="store_true", help="with apply: the encoder step without the MXF header sites (N19): the files' MXF header keeps saying 3840x2160, 16:9")
     a = ap.parse_args()
@@ -256,8 +260,10 @@ def main():
     say("This WRITES into the running camera's memory (not its firmware, not its settings).")
     if applying:
         say("Two FX6s have run this kit's steps (2026-11-25/26). With the memory step first, one of them records clean 3840x2560 XAVC-I 23.98p.")
-        say("  NOT yet run on a camera: this exact order without the screen step, XAVC-L with the memory step, 25p%s."
-            % (", and the memory variant R16" if a.alt_memory else ""))
+        say("  NOT yet run on a camera: this exact order with D16 and without the screen step, 25p. XAVC-L with the memory step crashed")
+        say("  on REC on one FX6 (with R16): record XAVC-I.")
+        if a.alt_memory:
+            say("  The memory variant R16 ran on one FX6 (XAVC-L): every step DONE, then E95-311 and a crash on REC. It did not avoid E95-311.")
         if a.screen:
             say("  The screen step gave a broken LCD preview on both FX6s (jitter; the picture in three sections). The recording was not affected.")
     else:
@@ -301,9 +307,9 @@ def main():
     say("All %d steps passed (%s)." % (len(steps), a.what))
     if a.what == "apply":
         say("XAVC-I QFHD and XAVC-L QFHD 4:2:0 8-bit at 23.98p now record a 3840x2560 picture.")
-        say("  (Seen on an FX6 with XAVC-I at 23.98p. XAVC-L and 25p have not been shot with the memory step: please report.)")
-        say("  If E95-311 is on the screen from the sensor step, it stays there with beeps and a blinking lamp until the camera is switched off;")
-        say("  the tester's camera recorded all the same.")
+        say("  (Seen on an FX6 with XAVC-I at 23.98p. XAVC-L crashed on REC on another FX6: use XAVC-I. 25p has not been shot.)")
+        say("  If E95-311 is on the screen, it stays there with beeps and a blinking lamp until the camera is switched off. One tester's")
+        say("  camera recorded XAVC-I all the same. Take the debug dump below BEFORE pressing REC, so its state is on record.")
         if a.no_meta:
             say("  The MXF header says 3840x2160, 16:9 (--no-meta): if an editor opens a clip squeezed, set it to 3840x2560 with square pixels.")
         else:
